@@ -546,7 +546,7 @@ export default function ClientPage() {
       </div>
 
       {/* Mobile Header Bar */}
-      {currentUser && (
+      {currentUser && currentView !== "onboarding" && currentSpace && (
         <header className="fixed top-0 left-0 right-0 h-16 z-40 bg-surface/30 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 lg:hidden">
           <button className="text-primary flex items-center justify-center cursor-pointer bg-transparent border-0" onClick={() => setMobileSidebarOpen(true)}>
             <span className="material-symbols-outlined text-2xl">menu</span>
@@ -565,7 +565,7 @@ export default function ClientPage() {
 
       <div id="app-container" className="relative z-10 flex">
         {/* Navigation Sidebar (Desktop) */}
-        {currentUser && (
+        {currentUser && currentView !== "onboarding" && currentSpace && (
           <aside className={`sidebar bg-white/10 dark:bg-inverse-surface/10 backdrop-blur-lg border-r border-white/20 shadow-sm py-8 px-4 z-50 transition-all duration-300 hover:bg-white/20 ${mobileSidebarOpen ? "mobile-open" : ""}`}>
             <div className="mb-12 px-4 cursor-pointer" onClick={() => navigateTo("home")}>
               <h1 className="font-headline-sm text-headline-sm text-primary font-bold drop-shadow-sm flex items-center gap-2">
@@ -645,9 +645,9 @@ export default function ClientPage() {
                   {/* Join Space */}
                   <div className="p-6 bg-white/20 rounded-2xl border border-white/30 space-y-4">
                     <h3 className="text-lg font-bold">Have an Invite Code?</h3>
-                    <div className="flex gap-3">
-                      <input type="text" className="input-field flex-1 uppercase font-mono text-center tracking-widest font-bold" placeholder="BU-XXXX-XX" value={onboardCode} onChange={(e) => setOnboardCode(e.target.value)} />
-                      <button className="btn btn-primary" onClick={handleJoinSpace}>Connect</button>
+                    <div className="space-y-3">
+                      <input type="text" className="input-field w-full uppercase font-mono text-center tracking-widest font-bold" placeholder="BU-XXXX-XX" value={onboardCode} onChange={(e) => setOnboardCode(e.target.value)} />
+                      <button className="btn btn-primary w-full py-3.5" onClick={handleJoinSpace}>Connect</button>
                     </div>
                   </div>
 
@@ -671,6 +671,14 @@ export default function ClientPage() {
                       <button className="btn btn-primary w-full py-4" onClick={handleCreateSpace}>Generate Invite Code</button>
                     </div>
                   </div>
+                </div>
+
+                {/* Onboarding Exit path */}
+                <div className="pt-4 border-t border-white/10 flex justify-between items-center mt-2">
+                  <p className="text-xs text-on-surface-variant">Signed in as <span className="font-semibold">{currentUser?.name}</span></p>
+                  <button className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors cursor-pointer bg-transparent border-0" onClick={handleLogout}>
+                    Sign Out
+                  </button>
                 </div>
               </div>
             </section>
@@ -1335,7 +1343,7 @@ export default function ClientPage() {
         </main>
 
         {/* Bottom Nav Bar (Mobile Only) */}
-        {currentUser && currentView !== "landing" && (
+        {currentUser && currentView !== "landing" && currentView !== "onboarding" && currentSpace && (
           <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-6 pb-8 pt-4 bg-surface/30 dark:bg-surface/10 backdrop-blur-[40px] border-t border-white/20 rounded-t-[24px] md:hidden shadow-lg">
             
             {/* Sanctuary (Home) */}
