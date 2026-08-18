@@ -210,7 +210,23 @@ export const DB = {
 
   createSpace(creatorId, relationshipMode) {
     const spaces = this.get(this.KEYS.SPACES);
-    const code = "BU-" + Math.random().toString(36).substr(2, 4).toUpperCase() + "-" + Math.random().toString(36).substr(2, 4).toUpperCase();
+    
+    const generateUniqueCode = () => {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let result = "";
+      for (let i = 0; i < 6; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return `BU-${result.slice(0, 4)}-${result.slice(4)}`;
+    };
+
+    let code = generateUniqueCode();
+    let attempts = 0;
+    while (spaces.find(s => s.code.replace(/[^A-Z0-9]/g, "").toUpperCase() === code.replace(/[^A-Z0-9]/g, "").toUpperCase()) && attempts < 100) {
+      code = generateUniqueCode();
+      attempts++;
+    }
+
     const newSpace = {
       id: "s_" + Math.random().toString(36).substr(2, 9),
       code,

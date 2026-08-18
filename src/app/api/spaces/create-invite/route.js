@@ -17,7 +17,12 @@ export async function POST(req) {
       return NextResponse.json({ error: "Missing creatorId" }, { status: 400 });
     }
     
-    const code = generateInviteCode();
+    let code = generateInviteCode();
+    let attempts = 0;
+    while (ServerDB.findSpaceByCode(code) && attempts < 100) {
+      code = generateInviteCode();
+      attempts++;
+    }
     const newSpace = {
       id: "s_" + Math.random().toString(36).substr(2, 9),
       code,
