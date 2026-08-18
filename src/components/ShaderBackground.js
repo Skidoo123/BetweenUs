@@ -52,10 +52,10 @@ export default function ShaderBackground() {
         }
         
         float colorShift = 0.5 + 0.5 * sin(p.x + p.y + t);
-        vec3 baseRed = vec3(0.53, 0.0, 0.07); // Crimson (#870012)
-        vec3 softPink = vec3(1.0, 0.94, 0.95); // Petal mist
+        vec3 baseRed = vec3(0.11, 0.06, 0.11); // Deep violet (#1b101b)
+        vec3 softPink = vec3(1.0, 0.7, 0.76); // Warm rose (#ffb2c1)
         
-        vec3 color = mix(softPink, baseRed, colorShift * 0.25);
+        vec3 color = mix(baseRed, softPink, colorShift * 0.15);
         
         float light = 0.012 / length(mod(p, 1.0) - 0.5);
         color += light * vec3(1.0, 0.85, 0.9);

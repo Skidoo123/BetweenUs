@@ -29,7 +29,9 @@ export default function ClientPage() {
 
   // Chat states
   const [chatMessage, setChatMessage] = useState("");
+  const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const chatMessagesEndRef = useRef(null);
+  const chatImageInputRef = useRef(null);
 
   // Daily Question state
   const [dailyAnswerInput, setDailyAnswerInput] = useState("");
@@ -187,19 +189,50 @@ export default function ClientPage() {
     loadState();
   };
 
+  const handleChatImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file || !currentSpace || !currentUser) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      DB.sendChatMessage(currentSpace.id, currentUser.id, "Shared an image 📷", reader.result);
+      loadState();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAutoAwesomePrompt = () => {
+    const prompts = [
+      "I'm thinking about the time we laughed so hard at...",
+      "What is your favorite memory of us from last month?",
+      "Sending you a warm reminder that I appreciate you! ❤️",
+      "Let's plan a cozy date night this weekend.",
+      "Thinking of you today! Here is a little virtual hug."
+    ];
+    const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+    setChatMessage(randomPrompt);
+  };
+
   const simulatePartnerVoiceNote = () => {
     if (!currentSpace || !partnerUser) return;
-    DB.sendChatMessage(currentSpace.id, partnerUser.id, "🎙️ Shared a voice note connection challenge completed!");
-    loadState();
+    setIsPartnerTyping(true);
+    setTimeout(() => {
+      DB.sendChatMessage(currentSpace.id, partnerUser.id, "🎙️ Shared a voice note (24s)");
+      loadState();
+      setIsPartnerTyping(false);
+    }, 1500);
   };
 
   const simulatePartnerPhotoShare = () => {
     if (!currentSpace || !partnerUser) return;
-    const samplePhotos = [
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDReGZZUrdhhr7TxziKhlt7pK2AfS3fv67g8JBkjZ5THfKhgAppPcI_hsq-Rj74BSl6MJguOQlVyC2pWGN5WvEtk4h1Ls0_1WUboTT4FGyNzcfzF45b9HFWFMdovEu2qsxqgbvgAO34HuQGor8lTAinKctbz_B2aQeoqEbVNq3yEdN0Sk8bnu-0XlL8SWW5BiT_1ualIi82x5oKVv78zAQPVD3_03QNuztkYizP_DKlVIMID0-GNGPK",
-    ];
-    DB.sendChatMessage(currentSpace.id, partnerUser.id, "Reminds me of our special walk! 🍂", samplePhotos[0]);
-    loadState();
+    setIsPartnerTyping(true);
+    setTimeout(() => {
+      const samplePhotos = [
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuAZ5hiH3okLASpqpWNGuPlTr35nuTff96MbkO1hJ4mbkjJ_x6P_rYdBrVWd_JfVWpCaf5Jr8y_2wCWrRxQyYpeg1pMQl71PSCGATbjLYCNzP1ZlXGEon6m9oNV150bakNrWaniRjZuOtEkY5F453vEEpzjYNRCgCJdkudMqc7mok54aEdHSb_62qv-9PxfRaYFL8U4QY-Bwc-FIrE38IXsZGdMdvc5xTNgb6t1jGOCh79jCI6CHDidF",
+      ];
+      DB.sendChatMessage(currentSpace.id, partnerUser.id, "Wish you were here for this one ☕", samplePhotos[0]);
+      loadState();
+      setIsPartnerTyping(false);
+    }, 1500);
   };
 
   // MEMORIES ACTIONS
@@ -273,16 +306,20 @@ export default function ClientPage() {
 
   const devSimulateChat = () => {
     if (!currentSpace || !partnerUser) return;
-    const simulatedTexts = [
-      "Hey there! Thinking of you.",
-      "Check out the memory we locked in today!",
-      "Can't wait to hang out this weekend.",
-      "I completed today's appreciation challenge!",
-      "Hope you are having a wonderful day."
-    ];
-    const randomTxt = simulatedTexts[Math.floor(Math.random() * simulatedTexts.length)];
-    DB.sendChatMessage(currentSpace.id, partnerUser.id, randomTxt);
-    loadState();
+    setIsPartnerTyping(true);
+    setTimeout(() => {
+      const simulatedTexts = [
+        "Hey there! Thinking of you.",
+        "Check out the memory we locked in today!",
+        "Can't wait to hang out this weekend.",
+        "I completed today's appreciation challenge!",
+        "Hope you are having a wonderful day."
+      ];
+      const randomTxt = simulatedTexts[Math.floor(Math.random() * simulatedTexts.length)];
+      DB.sendChatMessage(currentSpace.id, partnerUser.id, randomTxt);
+      loadState();
+      setIsPartnerTyping(false);
+    }, 1500);
   };
 
   const devSimulateAnswer = () => {
@@ -707,72 +744,135 @@ export default function ClientPage() {
 
           {/* VIEW: CHAT (OUR SPACE) */}
           {currentView === "chat" && currentSpace && (
-            <section className="view-container active-view w-full max-w-[900px] mx-auto py-xl">
-              <div className="glass-card chat-window flex flex-col rounded-3xl overflow-hidden relative">
-                {/* Chat Header */}
-                <div className="chat-header">
-                  <div className="chat-partner-info">
-                    <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center font-bold text-white text-sm" style={{ background: partnerUser?.avatarColor || "#70585b" }}>
-                      {(partnerUser?.name || "P")[0].toUpperCase()}
+            <section className="view-container active-view w-full max-w-[500px] mx-auto py-6 h-[85vh] flex flex-col relative">
+              <div className="glass-card chat-window flex-1 flex flex-col rounded-[32px] overflow-hidden relative border border-white/20 shadow-2xl bg-surface/10 backdrop-blur-xl">
+                
+                {/* Header */}
+                <div className="chat-header flex justify-between items-center px-6 py-4 border-b border-white/10 bg-surface/20 backdrop-blur-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20 relative flex items-center justify-center font-bold text-white text-sm" style={{ background: partnerUser?.avatarColor || "#70585b" }}>
+                      {partnerUser ? (
+                        partnerUser.name[0].toUpperCase()
+                      ) : (
+                        "P"
+                      )}
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-surface animate-pulse"></div>
                     </div>
                     <div>
-                      <h3 className="font-bold text-base">{partnerUser ? partnerUser.name : "Partner space"}</h3>
-                      <p className="text-xs text-on-surface-variant">Connected in relationship chat log</p>
+                      <h3 className="font-headline-lg-mobile text-base text-primary dark:text-primary-fixed-dim tracking-tight font-bold">
+                        {partnerUser ? partnerUser.name : "Waiting for partner..."}
+                      </h3>
+                      <p className="font-label-sm text-xs text-on-surface-variant">
+                        {partnerUser ? `Feeling ${partnerUser.mood || "😐"} ${partnerUser.moodLabel || "Okay"}` : "Connecting space..."}
+                      </p>
                     </div>
                   </div>
                   
                   <div className="flex gap-2">
-                    <button className="btn btn-glass py-1.5 px-3 text-xs" onClick={simulatePartnerVoiceNote}>🎙️ Sim Voice</button>
-                    <button className="btn btn-glass py-1.5 px-3 text-xs" onClick={simulatePartnerPhotoShare}>📷 Sim Photo</button>
+                    <a href="/admin" className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors text-on-surface-variant dark:text-on-surface-variant hover:opacity-80 transition-opacity">
+                      <span className="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>
+                    </a>
                   </div>
                 </div>
 
-                {/* Chat Messages */}
-                <div className="chat-messages">
+                {/* Messages */}
+                <div className="chat-messages flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4 hide-scrollbar">
+                  <div className="text-center w-full my-2">
+                    <span className="inline-block px-4 py-1 rounded-full bg-white/5 backdrop-blur-md border border-white/10 font-label-sm text-label-sm text-on-surface-variant">
+                      Connection Chat Log
+                    </span>
+                  </div>
+
                   {DB.get(DB.KEYS.CHATS)
                     .filter((c) => c.spaceId === currentSpace.id)
                     .map((msg, idx) => {
                       const isMe = msg.senderId === currentUser.id;
                       const sender = isMe ? currentUser : partnerUser;
                       
-                      return (
-                        <div key={idx} className={`chat-bubble-wrapper ${isMe ? "outgoing" : "incoming"}`}>
-                          <div className="chat-bubble">
-                            {!isMe && (
-                              <span className="text-[10px] block font-bold text-primary mb-1 uppercase tracking-widest">{sender?.name || "Partner"}</span>
-                            )}
-                            <p className="text-sm">{msg.text}</p>
+                      return isMe ? (
+                        <div key={idx} className="flex flex-col items-end gap-1 max-w-[85%] self-end">
+                          <div className="bg-primary/15 backdrop-blur-[32px] border border-primary/20 rounded-2xl rounded-tr-sm p-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_4px_12px_rgba(0,0,0,0.1)]">
                             {msg.media && (
-                              <img src={msg.media} alt="Shared attachment" className="mt-2 rounded-xl cursor-pointer hover:opacity-90 max-h-48 object-cover" onClick={() => setActiveImagePreview(msg.media)} />
+                              <img src={msg.media} alt="Shared attachment" className="rounded-xl w-full h-auto object-cover max-h-48 mb-2 cursor-pointer hover:opacity-90" onClick={() => setActiveImagePreview(msg.media)} />
                             )}
+                            <p className="font-body-md text-on-surface text-sm">{msg.text}</p>
                           </div>
-                          <span className="chat-meta text-[10px] text-on-surface-variant/60 mt-1">
+                          <div className="flex items-center gap-1 mr-1">
+                            <span className="font-label-sm text-label-sm text-on-surface-variant/50">
+                              {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
+                            </span>
+                            <span className="material-symbols-outlined text-[14px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>done_all</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div key={idx} className="flex flex-col items-start gap-1 max-w-[85%] self-start">
+                          <div className="bg-white/10 backdrop-blur-[32px] border border-white/20 rounded-2xl rounded-tl-sm px-glass-padding py-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+                            <span className="text-[10px] block font-bold text-primary mb-1 uppercase tracking-widest">{sender?.name || "Partner"}</span>
+                            {msg.media && (
+                              <img src={msg.media} alt="Shared attachment" className="rounded-xl w-full h-auto object-cover max-h-48 mb-2 cursor-pointer hover:opacity-90" onClick={() => setActiveImagePreview(msg.media)} />
+                            )}
+                            <p className="font-body-md text-on-surface text-sm">{msg.text}</p>
+                          </div>
+                          <span className="font-label-sm text-label-sm text-on-surface-variant/50 ml-1">
                             {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
                           </span>
                         </div>
                       );
                     })}
+                  
+                  {isPartnerTyping && (
+                    <div className="flex flex-col items-start gap-1 max-w-[85%] self-start mt-2">
+                      <div className="bg-white/5 backdrop-blur-[32px] border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1 items-center h-[42px]">
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                        <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div ref={chatMessagesEndRef} />
                 </div>
 
-                {/* Chat Input Footer */}
-                <div className="chat-footer">
-                  <div className="chat-input-wrapper">
+                {/* Footer Input */}
+                <div className="px-container-padding pb-4 pt-2 bg-surface/20 backdrop-blur-xl border-t border-white/10">
+                  <div className="bg-surface/30 backdrop-blur-[40px] border border-white/20 rounded-full flex items-center p-1 shadow-[0_-8px_32px_rgba(0,0,0,0.2)]">
+                    
+                    <button className="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors hover:bg-white/5" onClick={() => chatImageInputRef.current?.click()}>
+                      <span className="material-symbols-outlined">add_photo_alternate</span>
+                    </button>
+                    
+                    <button className="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors hover:bg-white/5" onClick={handleAutoAwesomePrompt}>
+                      <span className="material-symbols-outlined">auto_awesome</span>
+                    </button>
+                    
                     <input 
-                      type="text" 
-                      className="chat-input" 
-                      placeholder="Type a message or trigger partner logs..." 
-                      value={chatMessage} 
-                      onChange={(e) => setChatMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSendChat()} 
+                      type="file" 
+                      ref={chatImageInputRef} 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={handleChatImageSelect} 
                     />
+                    
+                    <input 
+                      className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-on-surface font-body-md placeholder:text-on-surface-variant/50 px-2 text-sm" 
+                      placeholder="Whisper something..." 
+                      type="text"
+                      value={chatMessage}
+                      onChange={(e) => setChatMessage(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
+                    />
+                    
+                    <button className="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors hover:bg-white/5 mr-1" onClick={simulatePartnerVoiceNote}>
+                      <span className="material-symbols-outlined">mic</span>
+                    </button>
+                    
+                    <button className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-[0_0_15px_rgba(255,218,223,0.3)] hover:scale-105 transition-transform" onClick={handleSendChat}>
+                      <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
+                    </button>
+                    
                   </div>
-                  <button className="chat-send-btn" onClick={handleSendChat}>
-                    <svg viewBox="0 0 24 24">
-                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                    </svg>
-                  </button>
                 </div>
+
               </div>
             </section>
           )}
