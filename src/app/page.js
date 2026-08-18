@@ -439,7 +439,7 @@ export default function ClientPage() {
   // 1. ISOLATE LANDING VIEW RENDER (No sidebar, no main margins)
   if (currentView === "landing") {
     return (
-      <div className="min-h-[100dvh] flex flex-col justify-between items-center px-6 py-10 text-center relative overflow-hidden bg-atmospheric text-on-surface font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+      <div className="min-h-[100dvh] w-full relative overflow-hidden bg-atmospheric text-on-surface font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container flex flex-col items-center justify-center">
         
         {/* Ambient Background Elements */}
         <div className="pointer-events-none absolute -z-10 inset-0 overflow-hidden">
@@ -454,76 +454,79 @@ export default function ClientPage() {
           <div className="absolute bottom-[25%] left-[30%] w-6 h-6 bg-primary rounded-full blur-lg animate-pulse-glow pointer-events-none" style={{ animationDelay: "2s" }}></div>
         </div>
 
-        {/* Header Section */}
-        <header className="w-full text-center px-6 space-y-4 animate-fade-in-down flex flex-col items-center">
-          <h2 className="text-primary/85 uppercase tracking-[0.3em] text-xs font-semibold text-center">Reimagined</h2>
-          <h1 className="font-serif text-3xl font-bold tracking-wide text-white drop-shadow-md text-center">
-            BetweenUs
-          </h1>
-        </header>
+        {/* Constrained landing content wrapper */}
+        <div className="relative z-10 w-full max-w-md min-h-[100dvh] flex flex-col justify-between items-center py-10 px-6">
+          {/* Header Section */}
+          <header className="w-full text-center space-y-4 animate-fade-in-down flex flex-col items-center">
+            <h2 className="text-primary/85 uppercase tracking-[0.3em] text-xs font-semibold text-center">Reimagined</h2>
+            <h1 className="font-serif text-3xl font-bold tracking-wide text-white drop-shadow-md text-center">
+              BetweenUs
+            </h1>
+          </header>
 
-        {/* Central Messaging */}
-        <section className="flex flex-col items-center justify-center flex-grow text-center space-y-8 mt-8">
-          <div className="space-y-4 animate-fade-in-up">
-            <h2 className="font-serif text-5xl md:text-6xl leading-tight font-semibold text-glow text-white">
-              Our <br/>
-              <span className="italic text-primary/90">Private</span> <br/>
-              Sanctuary
-            </h2>
-            <p className="font-sans text-sm md:text-base font-light text-brand-light/95 max-w-[280px] leading-relaxed mx-auto mt-4">
-              A quiet space meant just for two. Away from the noise, close to the heart.
-            </p>
-          </div>
-          <div className="pt-4 animate-pulse" style={{ animationDuration: "3s" }}>
-            <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 0", fontSize: "32px" }}>
-              favorite
-            </span>
-          </div>
-        </section>
+          {/* Central Messaging */}
+          <section className="flex flex-col items-center justify-center flex-grow text-center space-y-8 my-8">
+            <div className="space-y-4 animate-fade-in-up">
+              <h2 className="font-serif text-5xl md:text-6xl leading-tight font-semibold text-glow text-white">
+                Our <br/>
+                <span className="italic text-primary/90">Private</span> <br/>
+                Sanctuary
+              </h2>
+              <p className="font-sans text-sm md:text-base font-light text-brand-light/95 max-w-[280px] leading-relaxed mx-auto mt-4">
+                A quiet space meant just for two. Away from the noise, close to the heart.
+              </p>
+            </div>
+            <div className="pt-4 animate-pulse" style={{ animationDuration: "3s" }}>
+              <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 0", fontSize: "32px" }}>
+                favorite
+              </span>
+            </div>
+          </section>
 
-        {/* Action Section */}
-        <section className="w-full pt-8 pb-4 animate-fade-in-up flex flex-col items-center">
-          {currentUser ? (
-            <div className="flex flex-col items-center gap-4 w-full">
-              <button 
-                className="w-72 py-3.5 px-6 rounded-full bg-rose-200 text-rose-950 font-medium shadow-md hover:bg-rose-300 transition text-center whitespace-nowrap cursor-pointer"
-                type="button"
-                onClick={() => setCurrentView(currentUser.currentSpaceId ? "home" : "onboarding")}
-              >
-                Enter Sanctuary
-              </button>
-              <button 
-                className="w-72 py-2.5 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30 text-rose-100 text-center transition cursor-pointer font-medium text-sm whitespace-nowrap"
-                type="button"
-                onClick={handleLogout}
-              >
-                Sign Out ({currentUser.name})
-              </button>
+          {/* Action Section */}
+          <section className="w-full pt-4 pb-2 animate-fade-in-up flex flex-col items-center">
+            {currentUser ? (
+              <div className="flex flex-col items-center gap-4 w-full">
+                <button 
+                  className="w-72 py-3.5 px-6 rounded-full bg-rose-200 text-rose-950 font-medium shadow-md hover:bg-rose-300 transition text-center whitespace-nowrap cursor-pointer border-none"
+                  type="button"
+                  onClick={() => setCurrentView(currentUser.currentSpaceId ? "home" : "onboarding")}
+                >
+                  Enter Sanctuary
+                </button>
+                <button 
+                  className="w-72 py-2.5 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30 text-rose-100 text-center transition cursor-pointer font-medium text-sm whitespace-nowrap"
+                  type="button"
+                  onClick={handleLogout}
+                >
+                  Sign Out ({currentUser.name})
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-4 w-full">
+                <button 
+                  className="w-72 py-3.5 px-6 rounded-full bg-rose-200 text-rose-950 font-medium shadow-md hover:bg-rose-300 transition text-center whitespace-nowrap cursor-pointer border-none"
+                  type="button"
+                  onClick={() => setAuthModal("signup")}
+                >
+                  Get Started
+                </button>
+                <button 
+                  className="w-72 py-2.5 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30 text-rose-100 text-center transition cursor-pointer font-medium text-sm whitespace-nowrap"
+                  type="button"
+                  onClick={() => setAuthModal("signin")}
+                >
+                  Welcome Back
+                </button>
+              </div>
+            )}
+            <div className="mt-6 w-full flex justify-center">
+              <p className="w-72 text-center text-xs text-rose-200/60 leading-relaxed whitespace-normal">
+                Secured with end-to-end encryption.
+              </p>
             </div>
-          ) : (
-            <div className="flex flex-col items-center gap-4 w-full">
-              <button 
-                className="w-72 py-3.5 px-6 rounded-full bg-rose-200 text-rose-950 font-medium shadow-md hover:bg-rose-300 transition text-center whitespace-nowrap cursor-pointer"
-                type="button"
-                onClick={() => setAuthModal("signup")}
-              >
-                Get Started
-              </button>
-              <button 
-                className="w-72 py-2.5 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30 text-rose-100 text-center transition cursor-pointer font-medium text-sm whitespace-nowrap"
-                type="button"
-                onClick={() => setAuthModal("signin")}
-              >
-                Welcome Back
-              </button>
-            </div>
-          )}
-          <div className="mt-6 w-full flex justify-center">
-            <p className="w-72 text-center text-xs text-rose-200/60 leading-relaxed whitespace-normal">
-              Secured with end-to-end encryption.
-            </p>
-          </div>
-        </section>
+          </section>
+        </div>
         
         {renderAuthModal()}
       </div>
