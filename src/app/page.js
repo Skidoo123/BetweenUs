@@ -827,19 +827,42 @@ export default function ClientPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        <div className="input-group">
-                          <label className="input-label">Relationship Mode</label>
-                          <select className="select-field" value={onboardMode} onChange={(e) => setOnboardMode(e.target.value)}>
-                            <option value="couple">💕 Couples Mode</option>
-                            <option value="marriage">💍 Marriage Mode</option>
-                            <option value="long_distance">🌍 Long Distance</option>
-                            <option value="friends">🫂 Friends Mode</option>
-                            <option value="family">🏡 Family Mode</option>
-                            <option value="custom">✨ Custom Space</option>
-                          </select>
+                      <div className="space-y-4">
+                        <label className="input-label text-xs uppercase tracking-widest text-on-surface-variant font-bold">Select Relationship Mode</label>
+                        
+                        <div className="grid grid-cols-2 gap-3 w-full">
+                          {[
+                            { value: "couple", label: "Couples", emoji: "💖" },
+                            { value: "marriage", label: "Marriage", emoji: "💍" },
+                            { value: "long_distance", label: "Long-Distance", emoji: "🌍" },
+                            { value: "friends", label: "Friends", emoji: "👥" },
+                            { value: "family", label: "Family", emoji: "🏡" },
+                            { value: "custom", label: "Custom Space", emoji: "✨" }
+                          ].map((mode) => {
+                            const isSelected = onboardMode === mode.value;
+                            return (
+                              <button
+                                key={mode.value}
+                                type="button"
+                                className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 relative cursor-pointer group ${
+                                  isSelected 
+                                    ? "border-rose-400 bg-rose-500/15 shadow-[0_0_15px_rgba(244,63,94,0.25)] text-primary" 
+                                    : "bg-white/5 border-white/10 hover:border-white/20 text-on-surface-variant/90 hover:text-white"
+                                }`}
+                                onClick={() => setOnboardMode(mode.value)}
+                              >
+                                <span className="text-2xl mb-1.5 transition-transform group-hover:scale-110">{mode.emoji}</span>
+                                <span className="text-xs font-semibold tracking-wide text-center">{mode.label}</span>
+                                
+                                {isSelected && (
+                                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-rose-400 shadow-[0_0_6px_rgba(244,63,94,0.8)] animate-pulse" />
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
-                        <button className="btn btn-primary w-full py-4 flex justify-center items-center gap-2" onClick={handleCreateSpace} disabled={onboardLoading}>
+
+                        <button className="btn btn-primary w-full py-4 flex justify-center items-center gap-2 mt-2" onClick={handleCreateSpace} disabled={onboardLoading}>
                           {onboardLoading ? (
                             <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                           ) : (
