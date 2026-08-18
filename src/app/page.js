@@ -578,57 +578,68 @@ export default function ClientPage() {
 
           {/* VIEW: HOME DASHBOARD */}
           {currentView === "home" && currentSpace && (
-            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl">
-              <div className="dashboard-grid">
-                <div className="space-y-6">
-                  {/* Partner Status Card */}
-                  <div className="glass-card partner-status-card rounded-3xl">
-                    <div className="relationship-title-wrapper">
-                      <div className="relationship-avatar-pair">
-                        <div className="avatar-one" style={{ background: currentUser.avatarColor }}>
-                          {currentUser.name[0].toUpperCase()}
-                        </div>
-                        <div className="avatar-two" style={{ background: partnerUser?.avatarColor || "#70585b" }}>
-                          {(partnerUser?.name || "P")[0].toUpperCase()}
-                        </div>
+            <section className="view-container active-view w-full max-w-[1100px] mx-auto py-xl px-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                {/* Left/Main Columns */}
+                <div className="lg:col-span-2 space-y-8">
+                  {/* Partner Status Overview */}
+                  <section className="flex flex-col sm:flex-row items-center sm:text-left text-center gap-6 p-6 glass-card rounded-[32px] border border-white/10 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                    
+                    <div className="w-24 h-24 relative flex-shrink-0">
+                      <div className="absolute inset-0 bg-primary/20 rounded-full animate-subtle-pulse -m-2 blur-md"></div>
+                      <div className="w-full h-full rounded-full border-2 border-primary/30 relative z-10 flex items-center justify-center font-serif text-white text-3xl font-bold bg-cover bg-center overflow-hidden" style={{ background: partnerUser?.avatarColor || "#70585b" }}>
+                        {partnerUser ? (
+                          <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkORfiJPf7wgCEmgxmcYy1qEbzmYc8GGWFXQ1bfp-18ON-COitO61bpVQt7GcSidAc6S0Mkfu3SJcfYxa08REoHmfc_olVmgUaBxcmJClvDI3oFM8gK0WKbQfsX8pApELxbI0KpQU0LS-mloLHiQRzS_t3v7tWbpelz4wZDc3Ko-w2A-3QONfmUnlD3aY9JfB1Y7OLcQgKe417DGwtQzLGSZwy_WkFWeJZg7IJ3O24Y--ISeEp22-w" alt={partnerUser.name} />
+                        ) : (
+                          "P"
+                        )}
                       </div>
-                      <div>
-                        <h2 className="text-xl font-bold mb-0.5">{partnerUser ? `${partnerUser.name} & Me` : currentUser.name}</h2>
-                        <p className="text-xs text-on-surface-variant uppercase tracking-wider font-semibold">
-                          Mode: {currentSpace.relationshipMode.replace("_", " ")}
-                        </p>
-                      </div>
+                      <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-400 rounded-full border-4 border-surface z-25 animate-pulse"></div>
                     </div>
-
-                    <div className="flex items-center gap-4">
-                      {partnerUser && (
-                        <div className="text-right hidden sm:block">
-                          <p className="text-xs text-on-surface-variant font-semibold">Partner's mood</p>
-                          <p className="font-bold flex items-center justify-end gap-1">
-                            {partnerUser.mood || "😐"} {partnerUser.moodLabel || "Okay"}
-                          </p>
-                        </div>
-                      )}
-                      
-                      <div className="w-px h-10 bg-white/20 hidden sm:block"></div>
-
-                      <div className="streak-card">
-                        <div className="streak-info text-right">
-                          <span className="streak-num">🔥 {currentSpace.streakDays}</span>
-                          <span className="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Days streak</span>
-                        </div>
+                    
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                        <h2 className="font-title-md text-2xl text-primary-fixed-dim font-bold">{partnerUser ? `${partnerUser.name} & Me` : currentUser.name}</h2>
+                        {partnerUser && (
+                          <span className="bg-surface/60 border border-white/20 rounded-full px-3 py-0.5 text-xs flex items-center gap-1 shadow-md backdrop-blur-md text-on-surface">
+                            <span>{partnerUser.mood || "😐"}</span> {partnerUser.moodLabel || "Okay"}
+                          </span>
+                        )}
                       </div>
+                      <p className="font-body-md text-sm text-on-surface-variant opacity-80">
+                        {currentSpace.relationshipMode.replace("_", " ").toUpperCase()} Space • 🔥 {currentSpace.streakDays} Day Streak
+                      </p>
                     </div>
-                  </div>
+                  </section>
+
+                  {/* Daily Ritual Card */}
+                  <section className="bg-white/5 backdrop-blur-[32px] border border-white/10 rounded-[32px] p-8 shadow-[inset_0_0_20px_rgba(255,255,255,0.02)] relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none transition-opacity group-hover:opacity-100 opacity-50"></div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="material-symbols-outlined text-primary-fixed-dim text-lg">auto_awesome</span>
+                      <span className="font-label-sm text-xs text-primary-fixed-dim uppercase tracking-wider font-semibold">Daily Connection Ritual</span>
+                    </div>
+                    <h3 className="font-headline-lg-mobile text-xl text-on-surface mb-6 leading-tight font-medium max-w-xl">
+                      {todayQuestion ? todayQuestion.text : "Loading connection prompts..."}
+                    </h3>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button className="bg-primary/20 hover:bg-primary/30 text-primary-fixed-dim font-body-md text-sm py-4 px-6 rounded-xl border border-primary/20 transition-all duration-200 flex justify-center items-center gap-2" onClick={() => setCurrentView("daily")}>
+                        <span className="material-symbols-outlined text-lg">edit</span>
+                        {isQuestionRevealed ? "View Responses" : myAnswer ? "Waiting for Partner" : "Answer Prompt"}
+                      </button>
+                    </div>
+                  </section>
 
                   {/* Mood Check-In */}
-                  <div className="glass-card mood-widget">
+                  <div className="glass-card mood-widget rounded-[32px] p-8">
                     <div>
                       <h3 className="text-lg font-bold">How are you feeling today?</h3>
-                      <p className="text-sm text-on-surface-variant">Update your mood accent in our private space.</p>
+                      <p className="text-sm text-on-surface-variant mb-4">Update your mood accent in our private space.</p>
                     </div>
 
-                    <div className="mood-options-list">
+                    <div className="mood-options-list flex flex-wrap gap-2.5">
                       {[
                         { emoji: "😊", label: "Great", activeClass: "active-mood-great" },
                         { emoji: "🙂", label: "Good", activeClass: "active-mood-good" },
@@ -638,58 +649,43 @@ export default function ClientPage() {
                       ].map((m) => (
                         <button
                           key={m.label}
-                          className={`mood-btn ${currentUser.mood === m.emoji ? m.activeClass : ""}`}
+                          className={`mood-btn flex items-center gap-2 px-4 py-2.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/15 text-sm transition-all duration-200 ${currentUser.mood === m.emoji ? m.activeClass : ""}`}
                           onClick={() => handleMoodSelect(m.emoji, m.label)}
                         >
-                          <span className="mood-btn-emoji">{m.emoji}</span>
-                          <span className="mood-btn-text">{m.label}</span>
+                          <span className="text-lg">{m.emoji}</span>
+                          <span className="font-semibold text-xs">{m.label}</span>
                         </button>
                       ))}
                     </div>
                   </div>
-
-                  {/* Daily Activity Status / Quick Links */}
-                  <div className="glass-card flex flex-col sm:flex-row items-center justify-between gap-6">
-                    <div>
-                      <h3 className="text-lg font-bold flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary">calendar_today</span>
-                        Daily Ritual Connection
-                      </h3>
-                      <p className="text-sm text-on-surface-variant">
-                        {isQuestionRevealed 
-                          ? "Today's daily question is fully completed and revealed!" 
-                          : myAnswer 
-                            ? "You answered! Waiting for your partner to respond." 
-                            : "A new deep prompt is waiting. Lock in your answer to reveal both!"}
-                      </p>
-                    </div>
-                    <button className="btn btn-primary" onClick={() => setCurrentView("daily")}>
-                      {isQuestionRevealed ? "View Responses" : "Answer Daily Prompt"}
-                    </button>
-                  </div>
                 </div>
 
-                {/* Growth Radar / Sidebar */}
+                {/* Right Column / Bento Growth Metrics */}
                 <div className="space-y-6">
-                  <div className="glass-card">
-                    <h3 className="text-lg font-bold mb-4">Our Growth Metrics</h3>
-                    <div className="progress-list">
+                  <div className="glass-card rounded-[32px] p-6 border border-white/10">
+                    <h3 className="text-lg font-bold mb-6 text-primary-fixed-dim">Our Connection Bento</h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
                       {[
-                        { name: "Communication", colorClass: "" },
-                        { name: "Quality Time", colorClass: "progress-bar-fill-violet" },
-                        { name: "Appreciation", colorClass: "" },
-                        { name: "Understanding", colorClass: "progress-bar-fill-violet" },
+                        { name: "Communication", icon: "forum", dash: 85, colorClass: "text-primary-fixed-dim" },
+                        { name: "Understanding", icon: "favorite", dash: 72, colorClass: "text-secondary" },
+                        { name: "Appreciation", icon: "auto_awesome", dash: 60, colorClass: "text-primary-fixed-dim" },
+                        { name: "Quality Time", icon: "schedule", dash: 90, colorClass: "text-secondary" },
                       ].map((cat) => {
-                        const score = calculateProgressScore(cat.name);
+                        const score = calculateProgressScore(cat.name) || cat.dash;
                         return (
-                          <div key={cat.name} className="progress-bar-container">
-                            <div className="progress-label-row">
-                              <span className="progress-label-name">{cat.name}</span>
-                              <span className="progress-label-val">{score}%</span>
+                          <div key={cat.name} className="bg-white/5 backdrop-blur-[32px] border border-white/10 rounded-[24px] p-4 flex flex-col items-center text-center">
+                            <div className="relative w-16 h-16 mb-3">
+                              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                <path className="text-surface-variant" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3"></path>
+                                <path className={`${cat.colorClass} transition-all duration-1000 ease-out`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeDasharray={`${score}, 100`} strokeLinecap="round" strokeWidth="3"></path>
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className={`material-symbols-outlined text-lg ${cat.colorClass}`}>{cat.icon}</span>
+                              </div>
                             </div>
-                            <div className="progress-bar-bg">
-                              <div className={`progress-bar-fill ${cat.colorClass}`} style={{ width: `${score}%` }}></div>
-                            </div>
+                            <h4 className="font-body-md text-xs text-on-surface font-medium mb-1">{cat.name}</h4>
+                            <p className="font-label-sm text-[10px] text-on-surface-variant opacity-75">{score}% Score</p>
                           </div>
                         );
                       })}
@@ -698,20 +694,21 @@ export default function ClientPage() {
 
                   {/* Simulated Partner Status Details */}
                   {partnerUser && (
-                    <div className="glass-card p-6 border border-primary-container/20">
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant mb-3">Partner Session</h3>
+                    <div className="glass-card p-6 rounded-[24px] border border-primary-container/20">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-3">Partner Session</h3>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center font-bold text-white text-sm" style={{ background: partnerUser.avatarColor }}>
                           {partnerUser.name[0].toUpperCase()}
                         </div>
                         <div>
                           <p className="font-semibold text-sm">{partnerUser.name}</p>
-                          <p className="text-xs text-on-surface-variant">Last active mood time: {partnerUser.moodTime ? new Date(partnerUser.moodTime).toLocaleTimeString() : "N/A"}</p>
+                          <p className="text-xs text-on-surface-variant">Last active mood check-in: {partnerUser.moodTime ? new Date(partnerUser.moodTime).toLocaleTimeString() : "N/A"}</p>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
+
               </div>
             </section>
           )}
