@@ -1417,3 +1417,47 @@ body {
   opacity: 0;
   animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Reimagined Sanctuary Ambient Styles */
+.glass-circle {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+}
+
+.bg-atmospheric {
+  background-color: #5e3151; /* Deep plum base */
+  background-image: 
+    radial-gradient(at 20% 30%, rgba(230, 199, 203, 0.4) 0px, transparent 50%),
+    radial-gradient(at 80% 70%, rgba(255, 255, 255, 0.2) 0px, transparent 40%),
+    radial-gradient(at 50% 90%, rgba(230, 199, 203, 0.3) 0px, transparent 60%);
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(230, 199, 203, 0.5);
+}
+
+@keyframes floatAnimation {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  50% { transform: translateY(-20px) translateX(10px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+.animate-float-slow {
+  animation: floatAnimation 8s ease-in-out infinite;
+}
+.animate-float-medium {
+  animation: floatAnimation 6s ease-in-out infinite;
+}
+.animate-float-fast {
+  animation: floatAnimation 4s ease-in-out infinite;
+}
+.animate-pulse-glow {
+  animation: pulseGlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

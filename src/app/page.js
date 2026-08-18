@@ -460,82 +460,97 @@ export default function ClientPage() {
           
           {/* VIEW: LANDING */}
           {currentView === "landing" && (
-            <div className="absolute inset-0 z-0 bg-gradient-soft min-h-screen flex flex-col justify-between">
+            <div className="absolute inset-0 z-0 bg-atmospheric min-h-screen flex flex-col justify-between overflow-hidden">
               
-              {/* Atmospheric Background Image */}
-              <div 
-                className="absolute inset-0 z-0 opacity-40 mix-blend-multiply bg-cover bg-center" 
-                style={{ 
-                  backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDU2rj3_iQJRMbEdW3DuiRY0jHovVHJ70RZSMQbBwJykuV3BIe2W4agg0xX76uoRyrHESttdlQsX2-u8O9T8a6atFQAX-EuzN_RTtMnm8xUDo1VQ08v8gglbuyzRk3z8hSchCEDANwPgV_0Lf_yyEm2IFa_UHgXoI1g4qqqJjiI2UIXMr8-H2-0acAFJDzIYM7rIYP1Cu-tfvMCXP1-TxEUtcxkUrMfvfl5EKx_a-h5Yd1BCP32xVuH')" 
-                }}
-              />
+              {/* Ambient Background Elements */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                {/* Large top circle */}
+                <div className="glass-circle absolute w-[70vw] h-[70vw] rounded-full top-[10%] left-[5%] animate-float-slow mix-blend-screen opacity-70"></div>
+                {/* Medium right circle */}
+                <div className="glass-circle absolute w-[40vw] h-[40vw] rounded-full top-[40%] right-[-10%] animate-float-medium mix-blend-screen opacity-60"></div>
+                {/* Small bottom circle */}
+                <div className="glass-circle absolute w-[50vw] h-[50vw] rounded-full bottom-[15%] left-[-15%] animate-float-fast mix-blend-screen opacity-50"></div>
+                {/* Subtle glow spots */}
+                <div className="absolute top-[30%] right-[20%] w-4 h-4 bg-white rounded-full blur-md animate-pulse-glow"></div>
+                <div className="absolute bottom-[25%] left-[30%] w-6 h-6 bg-primary rounded-full blur-lg animate-pulse-glow" style={{ animationDelay: "2s" }}></div>
+              </div>
 
-              <main className="relative z-10 flex-1 flex flex-col px-6 py-12 justify-between h-full max-w-md mx-auto w-full">
-                
-                {/* Header / Logo Area */}
-                <header className="flex justify-center pt-4 animate-fade-in-down">
-                  <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tight font-bold text-3xl">
+              <main className="relative z-10 w-full h-screen flex flex-col items-center justify-between px-6 py-12 md:py-20 max-w-md mx-auto">
+                {/* Header Section */}
+                <header className="w-full text-center space-y-4 animate-fade-in-down">
+                  <h2 className="text-primary/85 uppercase tracking-[0.3em] text-xs font-semibold">Reimagined</h2>
+                  <h1 className="font-serif text-3xl font-bold tracking-wide text-white drop-shadow-md">
                     BetweenUs
                   </h1>
                 </header>
 
                 {/* Central Messaging */}
-                <section className="flex-1 flex flex-col justify-center items-center text-center space-y-6 mt-8 mb-8">
+                <section className="flex flex-col items-center justify-center flex-grow text-center space-y-8 mt-8">
                   <div className="space-y-4 animate-fade-in-up">
-                    <h2 className="font-display-lg text-display-lg text-primary text-5xl font-bold leading-tight">
-                      Our Private<br />Sanctuary
+                    <h2 className="font-serif text-5xl md:text-6xl leading-tight font-semibold text-glow text-white">
+                      Our <br/>
+                      <span className="italic text-primary/90">Private</span> <br/>
+                      Sanctuary
                     </h2>
-                    <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xs mx-auto mt-4 text-base opacity-90">
+                    <p className="font-sans text-sm md:text-base font-light text-brand-light/95 max-w-[280px] leading-relaxed mx-auto mt-4">
                       A quiet space meant just for two. Away from the noise, close to the heart.
                     </p>
                   </div>
-                  
+
                   {/* Decorative Element */}
-                  <div className="pt-6 animate-pulse" style={{ animationDuration: "3s" }}>
-                    <span className="material-symbols-outlined text-surface-tint" style={{ fontVariationSettings: "'FILL' 0", fontSize: "32px" }}>
+                  <div className="pt-4 animate-pulse" style={{ animationDuration: "3s" }}>
+                    <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 0", fontSize: "32px" }}>
                       favorite
                     </span>
                   </div>
                 </section>
 
-                {/* Action Area */}
-                <footer className="w-full pb-8 space-y-4 animate-fade-in-up">
+                {/* Action Section */}
+                <section className="w-full pt-8 pb-4 animate-fade-in-up">
                   {currentUser ? (
-                    <>
+                    <div className="space-y-4">
                       <button 
-                        className="w-full h-12 rounded-full bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center shadow-[0_8px_32px_rgba(69,27,58,0.15)] transition-transform active:scale-[0.98] font-bold text-sm" 
+                        className="w-full group relative inline-flex items-center justify-center px-8 py-4 font-medium text-brand-dark bg-primary/95 backdrop-blur-sm rounded-full overflow-hidden transition-all duration-300 hover:bg-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_-10px_rgba(230,199,203,0.5)]" 
                         type="button"
                         onClick={() => setCurrentView(currentUser.currentSpaceId ? "home" : "onboarding")}
                       >
-                        Enter Sanctuary
+                        <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-full group-hover:h-56 opacity-10"></span>
+                        <span className="relative tracking-wider font-semibold text-sm text-white hover:text-black">Enter Sanctuary</span>
                       </button>
+
                       <button 
-                        className="w-full h-12 rounded-full glass-panel text-primary font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] font-bold text-sm bg-white/40 border border-white/30 backdrop-blur-md" 
+                        className="w-full h-touch-target rounded-full glass-panel text-white font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] bg-white/10 hover:bg-white/20 border border-white/20" 
                         type="button"
                         onClick={handleLogout}
                       >
                         Sign Out ({currentUser.name})
                       </button>
-                    </>
+                    </div>
                   ) : (
-                    <>
+                    <div className="space-y-4">
                       <button 
-                        className="w-full h-12 rounded-full bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center shadow-[0_8px_32px_rgba(69,27,58,0.15)] transition-transform active:scale-[0.98] font-bold text-sm" 
+                        className="w-full group relative inline-flex items-center justify-center px-8 py-4 font-medium text-brand-dark bg-primary/95 backdrop-blur-sm rounded-full overflow-hidden transition-all duration-300 hover:bg-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_-10px_rgba(230,199,203,0.5)]" 
                         type="button"
                         onClick={() => setAuthModal("signup")}
                       >
-                        Get Started
+                        <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-full group-hover:h-56 opacity-10"></span>
+                        <span className="relative tracking-wider font-semibold text-sm text-white hover:text-black">Get Started</span>
                       </button>
+
                       <button 
-                        className="w-full h-12 rounded-full glass-panel text-primary font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] font-bold text-sm bg-white/40 border border-white/30 backdrop-blur-md" 
+                        className="w-full h-touch-target rounded-full glass-panel text-white font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] bg-white/10 hover:bg-white/20 border border-white/20" 
                         type="button"
                         onClick={() => setAuthModal("signin")}
                       >
                         Welcome Back
                       </button>
-                    </>
+                    </div>
                   )}
-                </footer>
+
+                  <div className="mt-6 text-center">
+                    <p className="text-xs text-brand-light/50">Secured with end-to-end encryption.</p>
+                  </div>
+                </section>
               </main>
             </div>
           )}
