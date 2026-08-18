@@ -40,12 +40,35 @@ export default function ClientPage() {
 
   // Profile Edit
   const [profileName, setProfileName] = useState("");
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const profileImageInputRef = useRef(null);
 
   // Chat states
   const [chatMessage, setChatMessage] = useState("");
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const chatMessagesEndRef = useRef(null);
   const chatImageInputRef = useRef(null);
+
+  const renderAvatar = (u, sizeClass = "w-10 h-10", textClass = "text-sm") => {
+    if (!u) return null;
+    if (u.avatarUrl) {
+      return (
+        <img 
+          src={u.avatarUrl} 
+          alt={u.name} 
+          className={`rounded-full object-cover shrink-0 ${sizeClass}`}
+        />
+      );
+    }
+    return (
+      <div 
+        className={`rounded-full flex items-center justify-center font-bold text-white uppercase shrink-0 ${sizeClass} ${textClass}`} 
+        style={{ background: u.avatarColor || "#ff5a79" }}
+      >
+        {u.name[0].toUpperCase()}
+      </div>
+    );
+  };
 
   // Daily Question state
   const [dailyAnswerInput, setDailyAnswerInput] = useState("");
@@ -91,6 +114,7 @@ export default function ClientPage() {
       if (user) {
         setCurrentUser(user);
         setProfileName(user.name);
+        setProfileImagePreview(user.avatarUrl || null);
 
         if (user.currentSpaceId) {
           const space = spaces.find((s) => s.id === user.currentSpaceId);
@@ -411,10 +435,46 @@ export default function ClientPage() {
     const u = users.find((x) => x.id === currentUser.id);
     if (u) {
       u.name = profileName.trim();
+      if (profileImagePreview) {
+        u.avatarUrl = profileImagePreview;
+      } else {
+        delete u.avatarUrl;
+      }
       DB.set(DB.KEYS.USERS, users);
       loadState();
       alert("Profile saved!");
     }
+  };
+
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setProfileImagePreview(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveProfileImage = () => {
+    setProfileImagePreview(null);
+    const users = DB.get(DB.KEYS.USERS);
+    const u = users.find((x) => x.id === currentUser.id);
+    if (u) {
+      delete u.avatarUrl;
+      DB.set(DB.KEYS.USERS, users);
+    }
+    loadState();
   };
 
   const handleLeaveSpace = () => {
@@ -695,9 +755,7 @@ export default function ClientPage() {
             <span className="material-symbols-outlined text-2xl">menu</span>
           </button>
           <h2 className="font-serif text-lg font-bold text-white capitalize">{currentView === "home" ? "Sanctuary" : currentView === "chat" ? "Our Space" : currentView === "daily" ? "Rituals" : currentView}</h2>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: currentUser.avatarColor, color: '#fff' }}>
-            {currentUser.name[0].toUpperCase()}
-          </div>
+          {renderAvatar(currentUser, "w-8 h-8", "text-xs")}
         </header>
       )}
 
@@ -753,9 +811,7 @@ export default function ClientPage() {
 
             {/* Sidebar User Footer */}
             <div className="sidebar-footer" style={{ paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,0.2)", marginTop: "20px" }}>
-              <div className="user-avatar-small" style={{ background: currentUser.avatarColor }}>
-                {currentUser.name[0].toUpperCase()}
-              </div>
+              {renderAvatar(currentUser, "w-9 h-9", "text-sm")}
               <div className="user-info-small">
                 <span className="user-name-small">{currentUser.name}</span>
                 <span className="user-status-small">{currentSpace ? "Connected" : "Single Space"}</span>
@@ -898,11 +954,19 @@ export default function ClientPage() {
                     
                     <div className="w-24 h-24 relative flex-shrink-0">
                       <div className="absolute inset-0 bg-primary/20 rounded-full animate-subtle-pulse -m-2 blur-md"></div>
-                      <div className="w-full h-full rounded-full border-2 border-primary/30 relative z-10 flex items-center justify-center font-serif text-white text-3xl font-bold bg-cover bg-center overflow-hidden" style={{ background: partnerUser?.avatarColor || "#70585b" }}>
+                      <div className="w-full h-full rounded-full border-2 border-primary/30 relative z-10 overflow-hidden flex items-center justify-center font-serif text-white text-3xl font-bold">
                         {partnerUser ? (
-                          <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkORfiJPf7wgCEmgxmcYy1qEbzmYc8GGWFXQ1bfp-18ON-COitO61bpVQt7GcSidAc6S0Mkfu3SJcfYxa08REoHmfc_olVmgUaBxcmJClvDI3oFM8gK0WKbQfsX8pApELxbI0KpQU0LS-mloLHiQRzS_t3v7tWbpelz4wZDc3Ko-w2A-3QONfmUnlD3aY9JfB1Y7OLcQgKe417DGwtQzLGSZwy_WkFWeJZg7IJ3O24Y--ISeEp22-w" alt={partnerUser.name} />
+                          partnerUser.avatarUrl ? (
+                            <img className="w-full h-full object-cover" src={partnerUser.avatarUrl} alt={partnerUser.name} />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center" style={{ background: partnerUser.avatarColor }}>
+                              {partnerUser.name[0].toUpperCase()}
+                            </div>
+                          )
                         ) : (
-                          "P"
+                          <div className="w-full h-full flex items-center justify-center bg-gray-500">
+                            P
+                          </div>
                         )}
                       </div>
                       <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-400 rounded-full border-4 border-surface z-25 animate-pulse"></div>
@@ -1006,9 +1070,7 @@ export default function ClientPage() {
                     <div className="glass-card p-6 rounded-[24px] border border-primary-container/20">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-3">Partner Session</h3>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center font-bold text-white text-sm" style={{ background: partnerUser.avatarColor }}>
-                          {partnerUser.name[0].toUpperCase()}
-                        </div>
+                        {renderAvatar(partnerUser, "w-10 h-10", "text-sm")}
                         <div>
                           <p className="font-semibold text-sm">{partnerUser.name}</p>
                           <p className="text-xs text-on-surface-variant">Last active mood check-in: {partnerUser.moodTime ? new Date(partnerUser.moodTime).toLocaleTimeString() : "N/A"}</p>
@@ -1056,14 +1118,17 @@ export default function ClientPage() {
                 {/* Header */}
                 <div className="chat-header flex justify-between items-center px-6 py-4 border-b border-white/10 bg-surface/20 backdrop-blur-xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20 relative flex items-center justify-center font-bold text-white text-sm" style={{ background: partnerUser?.avatarColor || "#70585b" }}>
-                      {partnerUser ? (
-                        partnerUser.name[0].toUpperCase()
-                      ) : (
-                        "P"
-                      )}
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-surface animate-pulse"></div>
-                    </div>
+                    {partnerUser ? (
+                      <div className="relative">
+                        {renderAvatar(partnerUser, "w-10 h-10", "text-sm")}
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-surface animate-pulse"></div>
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center font-bold text-white text-sm relative">
+                        P
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-surface animate-pulse"></div>
+                      </div>
+                    )}
                     <div>
                       <h3 className="font-headline-lg-mobile text-base text-primary dark:text-primary-fixed-dim tracking-tight font-bold">
                         {partnerUser ? partnerUser.name : "Waiting for partner..."}
@@ -1247,9 +1312,7 @@ export default function ClientPage() {
                             <div className="revealed-answers-grid flex-1 flex flex-col sm:flex-row gap-4 mt-6 mb-6">
                               <div className="answer-bubble flex-1">
                                 <div className="answer-author-row flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center font-bold text-xs text-white" style={{ background: currentUser.avatarColor }}>
-                                    {currentUser.name[0].toUpperCase()}
-                                  </div>
+                                  {renderAvatar(currentUser, "w-6 h-6", "text-[10px]")}
                                   <span className="font-bold text-sm">{currentUser.name}</span>
                                 </div>
                                 <p className="answer-text-content mt-3 text-sm italic">{creatorAnswer?.text}</p>
@@ -1257,9 +1320,7 @@ export default function ClientPage() {
                               
                               <div className="answer-bubble flex-1">
                                 <div className="answer-author-row flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center font-bold text-xs text-white" style={{ background: partnerUser?.avatarColor || "#70585b" }}>
-                                    {(partnerUser?.name || "P")[0].toUpperCase()}
-                                  </div>
+                                  {renderAvatar(partnerUser || { name: "Partner", avatarColor: "#70585b" }, "w-6 h-6", "text-[10px]")}
                                   <span className="font-bold text-sm">{partnerUser?.name || "Partner"}</span>
                                 </div>
                                 <p className="answer-text-content mt-3 text-sm italic">{partnerAnswer?.text}</p>
@@ -1468,28 +1529,55 @@ export default function ClientPage() {
                   
                   <div className="modal-form">
                     <div className="flex items-center gap-5">
-                      <div className="user-avatar-small flex items-center justify-center font-bold text-white text-xl" style={{ background: currentUser.avatarColor, width: "60px", height: "60px" }}>
-                        {currentUser.name[0].toUpperCase()}
+                      <div className="relative group cursor-pointer" onClick={() => profileImageInputRef.current?.click()}>
+                        {profileImagePreview ? (
+                          <img src={profileImagePreview} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-primary" />
+                        ) : (
+                          renderAvatar(currentUser, "w-16 h-16", "text-xl")
+                        )}
+                        <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="material-symbols-outlined text-white text-lg">photo_camera</span>
+                        </div>
+                        <input 
+                          type="file" 
+                          ref={profileImageInputRef} 
+                          className="hidden" 
+                          accept="image/*" 
+                          onChange={handleProfileImageChange} 
+                        />
                       </div>
-                      <div className="space-y-2">
-                        <span className="input-label">Avatar Accent Color</span>
+                      
+                      <div className="space-y-2 flex-1">
                         <div className="flex gap-2">
-                          {["#ff5a79", "#8a4fff", "#4dbcff", "#00e676", "#ffb800"].map((col) => (
-                            <span 
-                              key={col} 
-                              className="w-6 h-6 rounded-full cursor-pointer border border-white/30 hover:scale-110 transition-transform" 
-                              style={{ background: col }}
-                              onClick={() => {
-                                const users = DB.get(DB.KEYS.USERS);
-                                const u = users.find((x) => x.id === currentUser.id);
-                                if (u) {
-                                  u.avatarColor = col;
-                                  DB.set(DB.KEYS.USERS, users);
-                                  loadState();
-                                }
-                              }}
-                            />
-                          ))}
+                          <button className="text-xs font-bold text-primary hover:underline cursor-pointer bg-transparent border-0" onClick={() => profileImageInputRef.current?.click()}>
+                            Upload Photo
+                          </button>
+                          {(currentUser.avatarUrl || profileImagePreview) && (
+                            <button className="text-xs font-bold text-red-400 hover:underline cursor-pointer bg-transparent border-0" onClick={handleRemoveProfileImage}>
+                              Remove Photo
+                            </button>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <span className="input-label">Avatar Accent Color</span>
+                          <div className="flex gap-2">
+                            {["#ff5a79", "#8a4fff", "#4dbcff", "#00e676", "#ffb800"].map((col) => (
+                              <span 
+                                key={col} 
+                                className={`w-6 h-6 rounded-full cursor-pointer border hover:scale-110 transition-transform ${currentUser.avatarColor === col ? 'border-white scale-110' : 'border-white/30'}`} 
+                                style={{ background: col }}
+                                onClick={() => {
+                                  const users = DB.get(DB.KEYS.USERS);
+                                  const u = users.find((x) => x.id === currentUser.id);
+                                  if (u) {
+                                    u.avatarColor = col;
+                                    DB.set(DB.KEYS.USERS, users);
+                                    loadState();
+                                  }
+                                }}
+                              />
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
