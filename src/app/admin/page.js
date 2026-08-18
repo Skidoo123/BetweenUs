@@ -32,6 +32,7 @@ export default function AdminPage() {
   const [simPartnerAvatarColor, setSimPartnerAvatarColor] = useState("");
   const [simIsPending, setSimIsPending] = useState(false);
   const [simPartnerProfile, setSimPartnerProfile] = useState(null);
+  const [customSimText, setCustomSimText] = useState("");
 
   // Initialize and load
   useEffect(() => {
@@ -179,6 +180,16 @@ export default function AdminPage() {
     DB.sendChatMessage(simSpaceId, simPartnerId, text);
     logEvent(`[Simulator] Message sent to Space ${simSpaceId} by partner ${simPartnerId}: "${text}"`);
     alert(`Message simulated from partner: "${text}"`);
+  };
+
+  const handleSendCustomSimMessage = () => {
+    if (!simSpaceId || !simPartnerId) return;
+    if (!customSimText.trim()) return alert("Enter custom text to send.");
+    
+    DB.sendChatMessage(simSpaceId, simPartnerId, customSimText.trim());
+    logEvent(`[Simulator] Custom message sent to Space ${simSpaceId} by partner ${simPartnerId}: "${customSimText.trim()}"`);
+    alert(`Message simulated from partner: "${customSimText.trim()}"`);
+    setCustomSimText("");
   };
 
   const triggerSimulatedAnswer = () => {
@@ -746,6 +757,25 @@ export default function AdminPage() {
                         </div>
                       )}
                     </div>
+
+                    {!simIsPending && (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          className="input-field flex-1 text-xs"
+                          placeholder="Type custom text (e.g. Whisper something...) to simulate..."
+                          value={customSimText}
+                          onChange={(e) => setCustomSimText(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSendCustomSimMessage()}
+                        />
+                        <button
+                          className="btn btn-primary py-2 px-4 text-xs font-semibold shrink-0"
+                          onClick={handleSendCustomSimMessage}
+                        >
+                          Send Custom
+                        </button>
+                      </div>
+                    )}
 
                     <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <button className="btn btn-secondary py-3 text-xs disabled:opacity-50 disabled:cursor-not-allowed" onClick={triggerSimulatedChat} disabled={simIsPending}>
