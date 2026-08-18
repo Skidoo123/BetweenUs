@@ -9,6 +9,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [systemLogs, setSystemLogs] = useState([]);
   const [isMounted, setIsMounted] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   
   // Data State
   const [users, setUsers] = useState([]);
@@ -295,9 +296,25 @@ export default function AdminPage() {
     <div className="text-on-surface font-body-md min-h-screen antialiased overflow-x-hidden relative">
       <ShaderBackground />
 
+      {/* Mobile Admin Header Bar */}
+      <header className="fixed top-0 left-0 right-0 h-16 z-40 bg-surface/30 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 lg:hidden">
+        <button className="text-primary flex items-center justify-center cursor-pointer bg-transparent border-0" onClick={() => setMobileSidebarOpen(true)}>
+          <span className="material-symbols-outlined text-2xl">menu</span>
+        </button>
+        <h2 className="font-serif text-lg font-bold text-white capitalize">Admin Control</h2>
+        <a href="/" className="text-primary/70 hover:text-primary flex items-center justify-center">
+          <span className="material-symbols-outlined text-2xl">home</span>
+        </a>
+      </header>
+
+      {/* Mobile Sidebar Overlay */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden" onClick={() => setMobileSidebarOpen(false)} />
+      )}
+
       <div id="app-container" className="relative z-10 flex">
         {/* Admin Sidebar */}
-        <aside className="sidebar bg-white/15 dark:bg-inverse-surface/10 backdrop-blur-lg border-r border-white/20 shadow-sm py-8 px-4 z-50 transition-all duration-300">
+        <aside className={`sidebar bg-white/15 dark:bg-inverse-surface/10 backdrop-blur-lg border-r border-white/20 shadow-sm py-8 px-4 z-50 transition-all duration-300 ${mobileSidebarOpen ? "mobile-open" : ""}`}>
           <div className="mb-10 px-4 flex flex-col gap-1">
             <h1 className="font-headline-sm text-headline-sm text-primary font-bold drop-shadow-sm flex items-center gap-2">
               <svg className="logo-heart heart-pulse" style={{ width: "24px", height: "24px", fill: "var(--primary)" }} viewBox="0 0 24 24">
@@ -309,23 +326,23 @@ export default function AdminPage() {
           </div>
 
           <nav className="flex-1 space-y-2">
-            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "overview" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("overview"); }}>
+            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "overview" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("overview"); setMobileSidebarOpen(false); }}>
               <span className="material-symbols-outlined text-[22px]">dashboard</span>
               <span className="font-label-md text-label-md">Overview</span>
             </a>
-            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "users" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("users"); }}>
+            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "users" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("users"); setMobileSidebarOpen(false); }}>
               <span className="material-symbols-outlined text-[22px]">group</span>
               <span className="font-label-md text-label-md">Users Directory</span>
             </a>
-            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "spaces" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("spaces"); }}>
+            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "spaces" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("spaces"); setMobileSidebarOpen(false); }}>
               <span className="material-symbols-outlined text-[22px]">hub</span>
               <span className="font-label-md text-label-md">Active Spaces</span>
             </a>
-            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "questions" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("questions"); }}>
+            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "questions" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("questions"); setMobileSidebarOpen(false); }}>
               <span className="material-symbols-outlined text-[22px]">quiz</span>
               <span className="font-label-md text-label-md">Question Pool</span>
             </a>
-            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "simulator" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("simulator"); }}>
+            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "simulator" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("simulator"); setMobileSidebarOpen(false); }}>
               <span className="material-symbols-outlined text-[22px]">terminal</span>
               <span className="font-label-md text-label-md">Multi-User Simulator</span>
             </a>

@@ -11,6 +11,12 @@ export default function ClientPage() {
   const [partnerUser, setPartnerUser] = useState(null);
   const [currentView, setCurrentView] = useState("landing");
   const [isMounted, setIsMounted] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const navigateTo = (view) => {
+    setCurrentView(view);
+    setMobileSidebarOpen(false);
+  };
   
   // Modals state
   const [authModal, setAuthModal] = useState(null); // 'signup' | 'signin' | null
@@ -534,11 +540,29 @@ export default function ClientPage() {
         <div className="floating-bubble absolute top-[40%] right-[35%] w-[150px] h-[150px] rounded-full bg-white/10 backdrop-blur-sm border border-white/20"></div>
       </div>
 
+      {/* Mobile Header Bar */}
+      {currentUser && (
+        <header className="fixed top-0 left-0 right-0 h-16 z-40 bg-surface/30 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 lg:hidden">
+          <button className="text-primary flex items-center justify-center cursor-pointer bg-transparent border-0" onClick={() => setMobileSidebarOpen(true)}>
+            <span className="material-symbols-outlined text-2xl">menu</span>
+          </button>
+          <h2 className="font-serif text-lg font-bold text-white capitalize">{currentView === "home" ? "Sanctuary" : currentView === "chat" ? "Our Space" : currentView === "daily" ? "Rituals" : currentView}</h2>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: currentUser.avatarColor, color: '#fff' }}>
+            {currentUser.name[0].toUpperCase()}
+          </div>
+        </header>
+      )}
+
+      {/* Mobile Sidebar Overlay */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden" onClick={() => setMobileSidebarOpen(false)} />
+      )}
+
       <div id="app-container" className="relative z-10 flex">
         {/* Navigation Sidebar (Desktop) */}
         {currentUser && (
-          <aside className="sidebar bg-white/10 dark:bg-inverse-surface/10 backdrop-blur-lg border-r border-white/20 shadow-sm py-8 px-4 z-50 transition-all duration-300 hover:bg-white/20">
-            <div className="mb-12 px-4 cursor-pointer" onClick={() => setCurrentView("home")}>
+          <aside className={`sidebar bg-white/10 dark:bg-inverse-surface/10 backdrop-blur-lg border-r border-white/20 shadow-sm py-8 px-4 z-50 transition-all duration-300 hover:bg-white/20 ${mobileSidebarOpen ? "mobile-open" : ""}`}>
+            <div className="mb-12 px-4 cursor-pointer" onClick={() => navigateTo("home")}>
               <h1 className="font-headline-sm text-headline-sm text-primary font-bold drop-shadow-sm flex items-center gap-2">
                 <svg className="logo-heart" style={{ width: "24px", height: "24px", fill: "var(--primary)" }} viewBox="0 0 24 24">
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -549,31 +573,31 @@ export default function ClientPage() {
             </div>
 
             <nav className="flex-1 space-y-2">
-              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "home" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("home"); }}>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "home" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("home"); }}>
                 <span className="material-symbols-outlined">home</span>
                 <span className="font-label-md text-label-md">Home</span>
               </a>
-              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "discover" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("discover"); }}>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "discover" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("discover"); }}>
                 <span className="material-symbols-outlined">explore</span>
                 <span className="font-label-md text-label-md">Discover</span>
               </a>
-              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "chat" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("chat"); }}>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "chat" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("chat"); }}>
                 <span className="material-symbols-outlined">chat_bubble</span>
                 <span className="font-label-md text-label-md">Our Space</span>
               </a>
-              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "daily" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("daily"); }}>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "daily" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("daily"); }}>
                 <span className="material-symbols-outlined">calendar_today</span>
                 <span className="font-label-md text-label-md">Daily</span>
               </a>
-              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "memories" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("memories"); }}>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "memories" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("memories"); }}>
                 <span className="material-symbols-outlined">auto_stories</span>
                 <span className="font-label-md text-label-md">Memories</span>
               </a>
-              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "insights" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("insights"); }}>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "insights" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("insights"); }}>
                 <span className="material-symbols-outlined">insights</span>
                 <span className="font-label-md text-label-md">Insights</span>
               </a>
-              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "profile" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("profile"); }}>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "profile" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("profile"); }}>
                 <span className="material-symbols-outlined">person</span>
                 <span className="font-label-md text-label-md">Profile</span>
               </a>
@@ -592,7 +616,7 @@ export default function ClientPage() {
 
             {/* Admin Link */}
             <div style={{ paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.2)", marginTop: "12px" }}>
-              <a href="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant/60 font-medium hover:bg-white/30 hover:text-primary transition-all duration-200">
+              <a href="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant/60 font-medium hover:bg-white/30 hover:text-primary transition-all duration-200" onClick={() => setMobileSidebarOpen(false)}>
                 <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>lock</span>
                 <span className="font-label-md text-label-md" style={{ fontSize: "0.85rem" }}>Admin Dashboard</span>
               </a>
