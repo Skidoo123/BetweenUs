@@ -151,7 +151,7 @@ body {
 /* Navigation Sidebar (Desktop) */
 .sidebar {
   width: var(--sidebar-width);
-  background: rgba(255, 248, 247, 0.85);
+  background: rgba(27, 16, 27, 0.85);
   backdrop-filter: blur(20px);
   border-right: 1px solid var(--border-glass);
   padding: 24px 16px;
@@ -779,6 +779,8 @@ body {
   font-weight: 700;
   line-height: 1.4;
   margin-bottom: 30px;
+  width: 100%;
+  max-width: 28rem;
 }
 
 .q-locked-overlay {

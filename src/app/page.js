@@ -993,7 +993,7 @@ export default function ClientPage() {
                               {todayQuestion.category}
                             </div>
                             
-                            <h2 className="q-text text-xl font-bold text-center text-on-surface leading-snug px-6">
+                            <h2 className="q-text text-xl font-bold text-center text-on-surface leading-snug px-6 w-full max-w-lg">
                               {todayQuestion.text}
                             </h2>
 
