@@ -307,12 +307,12 @@ export default function AdminPage() {
         </a>
       </header>
 
-      {/* Mobile Sidebar Overlay */}
-      {mobileSidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden" onClick={() => setMobileSidebarOpen(false)} />
-      )}
-
       <div id="app-container" className="relative z-10 flex">
+        {/* Mobile Sidebar Overlay */}
+        {mobileSidebarOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden" onClick={() => setMobileSidebarOpen(false)} />
+        )}
+
         {/* Admin Sidebar */}
         <aside className={`sidebar bg-white/15 dark:bg-inverse-surface/10 backdrop-blur-lg border-r border-white/20 shadow-sm py-8 px-4 z-50 transition-all duration-300 ${mobileSidebarOpen ? "mobile-open" : ""}`}>
           <div className="mb-10 px-4 flex flex-col gap-1">

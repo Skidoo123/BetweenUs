@@ -558,12 +558,12 @@ export default function ClientPage() {
         </header>
       )}
 
-      {/* Mobile Sidebar Overlay */}
-      {mobileSidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden" onClick={() => setMobileSidebarOpen(false)} />
-      )}
-
       <div id="app-container" className="relative z-10 flex">
+        {/* Mobile Sidebar Overlay */}
+        {mobileSidebarOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden" onClick={() => setMobileSidebarOpen(false)} />
+        )}
+
         {/* Navigation Sidebar (Desktop) */}
         {currentUser && currentView !== "onboarding" && currentSpace && (
           <aside className={`sidebar bg-white/10 dark:bg-inverse-surface/10 backdrop-blur-lg border-r border-white/20 shadow-sm py-8 px-4 z-50 transition-all duration-300 hover:bg-white/20 ${mobileSidebarOpen ? "mobile-open" : ""}`}>
