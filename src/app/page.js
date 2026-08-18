@@ -84,18 +84,13 @@ export default function ClientPage() {
             const partnerId = space.creatorId === user.id ? space.partnerId : space.creatorId;
             const partner = users.find((p) => p.id === partnerId);
             setPartnerUser(partner || null);
-            
-            // If logged in and connected, default to home view
-            setCurrentView((prev) => (prev === "landing" || prev === "onboarding" ? "home" : prev));
           } else {
             setCurrentSpace(null);
             setPartnerUser(null);
-            setCurrentView("onboarding");
           }
         } else {
           setCurrentSpace(null);
           setPartnerUser(null);
-          setCurrentView("onboarding");
         }
       } else {
         clearUserState();
@@ -459,77 +454,84 @@ export default function ClientPage() {
           
           {/* VIEW: LANDING */}
           {currentView === "landing" && (
-            <section className="view-container active-view w-full max-w-[1200px] mx-auto px-margin-mobile md:px-margin-desktop py-xl">
-              <div className="flex flex-col items-center text-center mb-xl pt-lg relative">
-                <h1 className="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-on-surface mb-md max-w-4xl">
-                  Because the people we love deserve more than "How are you?"
-                </h1>
-                <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mb-lg">
-                  Answer. Share. Listen. Grow closer every day, no matter the distance.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-md items-center justify-center">
-                  <button className="bg-primary text-on-primary px-8 py-4 rounded-full font-label-md text-label-md btn-hover-lift" onClick={() => setAuthModal("signup")}>
-                    Create Your BetweenUs
-                  </button>
-                  <button className="glass-card text-primary px-8 py-4 rounded-full font-label-md text-label-md btn-hover-lift flex items-center gap-2" onClick={() => setAuthModal("signin")}>
-                    <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>key</span>
-                    Join With a Code
-                  </button>
-                </div>
+            <div className="absolute inset-0 z-0 bg-gradient-soft min-h-screen flex flex-col justify-between">
+              
+              {/* Atmospheric Background Image */}
+              <div 
+                className="absolute inset-0 z-0 opacity-40 mix-blend-multiply bg-cover bg-center" 
+                style={{ 
+                  backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDU2rj3_iQJRMbEdW3DuiRY0jHovVHJ70RZSMQbBwJykuV3BIe2W4agg0xX76uoRyrHESttdlQsX2-u8O9T8a6atFQAX-EuzN_RTtMnm8xUDo1VQ08v8gglbuyzRk3z8hSchCEDANwPgV_0Lf_yyEm2IFa_UHgXoI1g4qqqJjiI2UIXMr8-H2-0acAFJDzIYM7rIYP1Cu-tfvMCXP1-TxEUtcxkUrMfvfl5EKx_a-h5Yd1BCP32xVuH')" 
+                }}
+              />
 
-                <div className="mt-xl w-full max-w-5xl h-[400px] md:h-[600px] glass-card rounded-[32px] soft-shadow overflow-hidden relative">
-                  <div className="w-full h-full bg-cover bg-center opacity-90 mix-blend-multiply" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDReGZZUrdhhr7TxziKhlt7pK2AfS3fv67g8JBkjZ5THfKhgAppPcI_hsq-Rj74BSl6MJguOQlVyC2pWGN5WvEtk4h1Ls0_1WUboTT4FGyNzcfzF45b9HFWFMdovEu2qsxqgbvgAO34HuQGor8lTAinKctbz_B2aQeoqEbVNq3yEdN0Sk8bnu-0XlL8SWW5BiT_1ualIi82x5oKVv78zAQPVD3_03QNuztkYizP_DKlVIMID0-GNGPK')" }}></div>
-                  <div className="absolute top-1/4 left-10 glass-card p-4 rounded-xl soft-shadow transform -rotate-3 hidden md:flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
-                      <span className="material-symbols-outlined">favorite</span>
-                    </div>
-                    <div>
-                      <p class="font-label-md text-label-md text-on-surface">Daily Prompt Answered</p>
-                      <p className="font-caption text-caption text-on-surface-variant">Just now</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <main className="relative z-10 flex-1 flex flex-col px-6 py-12 justify-between h-full max-w-md mx-auto w-full">
+                
+                {/* Header / Logo Area */}
+                <header className="flex justify-center pt-4 animate-fade-in-down">
+                  <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tight font-bold text-3xl">
+                    BetweenUs
+                  </h1>
+                </header>
 
-              <div className="w-full h-px bg-gradient-to-r from-transparent via-outline-variant/40 to-transparent my-xl"></div>
-
-              <div className="py-lg">
-                <div className="text-center mb-lg">
-                  <h2 className="font-headline-md text-headline-md text-on-surface mb-sm">Nurturing Deep Connections</h2>
-                  <p className="font-body-md text-body-md text-on-surface-variant max-w-xl mx-auto">Rituals designed to create a private sanctuary for your relationship.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
-                  <div className="glass-card rounded-2xl p-8 soft-shadow flex flex-col h-full hover:-translate-y-2 transition-transform duration-300">
-                    <div className="w-14 h-14 rounded-full bg-primary-container/30 flex items-center justify-center mb-6 text-primary">
-                      <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>chat_bubble</span>
-                    </div>
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Daily Question</h3>
-                    <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                      Answer a deep, reflective prompt privately every day. Responses are revealed only once both of you complete it!
+                {/* Central Messaging */}
+                <section className="flex-1 flex flex-col justify-center items-center text-center space-y-6 mt-8 mb-8">
+                  <div className="space-y-4 animate-fade-in-up">
+                    <h2 className="font-display-lg text-display-lg text-primary text-5xl font-bold leading-tight">
+                      Our Private<br />Sanctuary
+                    </h2>
+                    <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xs mx-auto mt-4 text-base opacity-90">
+                      A quiet space meant just for two. Away from the noise, close to the heart.
                     </p>
                   </div>
-                  <div className="glass-card rounded-2xl p-8 soft-shadow flex flex-col h-full hover:-translate-y-2 transition-transform duration-300 relative overflow-hidden">
-                    <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-secondary-container/20 rounded-full blur-xl -z-10"></div>
-                    <div className="w-14 h-14 rounded-full bg-secondary-container/50 flex items-center justify-center mb-6 text-on-secondary-container">
-                      <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-                    </div>
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Relationship Streaks</h3>
-                    <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                      Cultivate daily connection habits. Track consecutive streaks, answers, and milestones accomplished together.
-                    </p>
+                  
+                  {/* Decorative Element */}
+                  <div className="pt-6 animate-pulse" style={{ animationDuration: "3s" }}>
+                    <span className="material-symbols-outlined text-surface-tint" style={{ fontVariationSettings: "'FILL' 0", fontSize: "32px" }}>
+                      favorite
+                    </span>
                   </div>
-                  <div className="glass-card rounded-2xl p-8 soft-shadow flex flex-col h-full hover:-translate-y-2 transition-transform duration-300">
-                    <div className="w-14 h-14 rounded-full bg-tertiary-container/30 flex items-center justify-center mb-6 text-tertiary">
-                      <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>auto_stories</span>
-                    </div>
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Shared Memories Book</h3>
-                    <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                      Automatically save special answers, shared photos, audio recordings, and connection metrics in a private timeline.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
+                </section>
+
+                {/* Action Area */}
+                <footer className="w-full pb-8 space-y-4 animate-fade-in-up">
+                  {currentUser ? (
+                    <>
+                      <button 
+                        className="w-full h-12 rounded-full bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center shadow-[0_8px_32px_rgba(69,27,58,0.15)] transition-transform active:scale-[0.98] font-bold text-sm" 
+                        type="button"
+                        onClick={() => setCurrentView(currentUser.currentSpaceId ? "home" : "onboarding")}
+                      >
+                        Enter Sanctuary
+                      </button>
+                      <button 
+                        className="w-full h-12 rounded-full glass-panel text-primary font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] font-bold text-sm bg-white/40 border border-white/30 backdrop-blur-md" 
+                        type="button"
+                        onClick={handleLogout}
+                      >
+                        Sign Out ({currentUser.name})
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button 
+                        className="w-full h-12 rounded-full bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center shadow-[0_8px_32px_rgba(69,27,58,0.15)] transition-transform active:scale-[0.98] font-bold text-sm" 
+                        type="button"
+                        onClick={() => setAuthModal("signup")}
+                      >
+                        Get Started
+                      </button>
+                      <button 
+                        className="w-full h-12 rounded-full glass-panel text-primary font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] font-bold text-sm bg-white/40 border border-white/30 backdrop-blur-md" 
+                        type="button"
+                        onClick={() => setAuthModal("signin")}
+                      >
+                        Welcome Back
+                      </button>
+                    </>
+                  )}
+                </footer>
+              </main>
+            </div>
           )}
 
           {/* VIEW: ONBOARDING */}
