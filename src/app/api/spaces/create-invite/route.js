@@ -2,12 +2,10 @@ import { NextResponse } from "next/server";
 import { ServerDB } from "@/lib/serverDb";
 
 function generateInviteCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No confusing 0/O or 1/I
-  let result = "";
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `BU-${result.slice(0, 4)}-${result.slice(4)}`;
+  const words = ["LOVE", "PAIR", "BOND", "SOUL", "MINT", "SYNC", "GLOW", "VIBE"];
+  const randomWord = words[Math.floor(Math.random() * words.length)];
+  const randomDigits = Math.floor(10 + Math.random() * 90); // 10 to 99
+  return `BU-${randomWord}-${randomDigits}`;
 }
 
 export async function POST(req) {

@@ -212,12 +212,10 @@ export const DB = {
     const spaces = this.get(this.KEYS.SPACES);
     
     const generateUniqueCode = () => {
-      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      let result = "";
-      for (let i = 0; i < 6; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return `BU-${result.slice(0, 4)}-${result.slice(4)}`;
+      const words = ["LOVE", "PAIR", "BOND", "SOUL", "MINT", "SYNC", "GLOW", "VIBE"];
+      const randomWord = words[Math.floor(Math.random() * words.length)];
+      const randomDigits = Math.floor(10 + Math.random() * 90); // 10 to 99
+      return `BU-${randomWord}-${randomDigits}`;
     };
 
     let code = generateUniqueCode();
