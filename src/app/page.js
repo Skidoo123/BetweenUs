@@ -450,7 +450,7 @@ export default function ClientPage() {
         )}
 
         {/* Main Content Area */}
-        <main className={`main-content flex-1 min-h-screen ${(!currentUser || currentView === "landing") ? "ml-0 w-full" : ""}`} style={{ marginLeft: currentUser && currentView !== "landing" ? "var(--sidebar-width)" : "0" }}>
+        <main className={`main-content flex-1 min-h-screen ${(!currentUser || currentView === "landing") ? "ml-0 w-full" : ""}`} style={{ marginLeft: currentUser && currentView !== "landing" ? "var(--sidebar-width)" : "0", width: currentUser && currentView !== "landing" ? "calc(100% - var(--sidebar-width))" : "100%" }}>
           
           {/* VIEW: LANDING */}
           {currentView === "landing" && (
@@ -1235,6 +1235,59 @@ export default function ClientPage() {
           )}
 
         </main>
+
+        {/* Bottom Nav Bar (Mobile Only) */}
+        {currentUser && currentView !== "landing" && (
+          <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-6 pb-8 pt-4 bg-surface/30 dark:bg-surface/10 backdrop-blur-[40px] border-t border-white/20 rounded-t-[24px] md:hidden shadow-lg">
+            
+            {/* Sanctuary (Home) */}
+            <button 
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "home" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
+              onClick={() => setCurrentView("home")}
+            >
+              <span className="material-symbols-outlined mb-1">home</span>
+              <span className="font-label-sm text-[10px] font-bold">Sanctuary</span>
+            </button>
+
+            {/* Rituals (Daily) */}
+            <button 
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "daily" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
+              onClick={() => setCurrentView("daily")}
+            >
+              <span className="material-symbols-outlined mb-1">auto_awesome</span>
+              <span className="font-label-sm text-[10px] font-bold">Rituals</span>
+            </button>
+
+            {/* Our Space (Chat) */}
+            <button 
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "chat" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
+              onClick={() => setCurrentView("chat")}
+            >
+              <span className="material-symbols-outlined mb-1">chat_bubble</span>
+              <span className="font-label-sm text-[10px] font-bold">Our Space</span>
+            </button>
+
+            {/* Timeline (Memories) */}
+            <button 
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "memories" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
+              onClick={() => setCurrentView("memories")}
+            >
+              <span className="material-symbols-outlined mb-1">auto_stories</span>
+              <span className="font-label-sm text-[10px] font-bold">Timeline</span>
+            </button>
+
+            {/* Profile (Settings) */}
+            <button 
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "profile" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
+              onClick={() => setCurrentView("profile")}
+            >
+              <span className="material-symbols-outlined mb-1">person_heart</span>
+              <span className="font-label-sm text-[10px] font-bold">Profile</span>
+            </button>
+            
+          </nav>
+        )}
+
       </div>
 
       {/* Shared Auth Modal Overlay */}
