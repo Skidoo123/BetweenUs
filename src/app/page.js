@@ -1,0 +1,1259 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { DB } from "@/lib/db";
+import { DEFAULT_DISCOVER } from "@/lib/data";
+import ShaderBackground from "@/components/ShaderBackground";
+
+export default function ClientPage() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentSpace, setCurrentSpace] = useState(null);
+  const [partnerUser, setPartnerUser] = useState(null);
+  const [currentView, setCurrentView] = useState("landing");
+  
+  // Modals state
+  const [authModal, setAuthModal] = useState(null); // 'signup' | 'signin' | null
+  const [activeArticle, setActiveArticle] = useState(null);
+  const [activeImagePreview, setActiveImagePreview] = useState(null);
+
+  // Form states
+  const [authName, setAuthName] = useState("");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+
+  const [onboardCode, setOnboardCode] = useState("");
+  const [onboardMode, setOnboardMode] = useState("couple");
+
+  // Profile Edit
+  const [profileName, setProfileName] = useState("");
+
+  // Chat states
+  const [chatMessage, setChatMessage] = useState("");
+  const chatMessagesEndRef = useRef(null);
+
+  // Daily Question state
+  const [dailyAnswerInput, setDailyAnswerInput] = useState("");
+
+  // Memory creation sidebar state
+  const [memoryTitleInput, setMemoryTitleInput] = useState("");
+  const [memoryDetailsInput, setMemoryDetailsInput] = useState("");
+  const [memoryImage, setMemoryImage] = useState(null);
+
+  // Dev toolbar state
+  const [devToolbarCollapsed, setDevToolbarCollapsed] = useState(true);
+
+  // Load state on mount
+  useEffect(() => {
+    DB.init();
+    loadState();
+
+    // Event listener for tab sync
+    const handleStorageChange = (e) => {
+      if (Object.values(DB.KEYS).includes(e.key)) {
+        loadState();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  // Scroll to bottom of chat
+  useEffect(() => {
+    if (currentView === "chat") {
+      chatMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [currentView]);
+
+  const loadState = () => {
+    const activeUserId = localStorage.getItem(DB.KEYS.ACTIVE_USER);
+    const users = DB.get(DB.KEYS.USERS);
+    const spaces = DB.get(DB.KEYS.SPACES);
+
+    if (activeUserId) {
+      const user = users.find((u) => u.id === activeUserId);
+      if (user) {
+        setCurrentUser(user);
+        setProfileName(user.name);
+
+        if (user.currentSpaceId) {
+          const space = spaces.find((s) => s.id === user.currentSpaceId);
+          if (space) {
+            setCurrentSpace(space);
+            const partnerId = space.creatorId === user.id ? space.partnerId : space.creatorId;
+            const partner = users.find((p) => p.id === partnerId);
+            setPartnerUser(partner || null);
+            
+            // If logged in and connected, default to home view
+            setCurrentView((prev) => (prev === "landing" || prev === "onboarding" ? "home" : prev));
+          } else {
+            setCurrentSpace(null);
+            setPartnerUser(null);
+            setCurrentView("onboarding");
+          }
+        } else {
+          setCurrentSpace(null);
+          setPartnerUser(null);
+          setCurrentView("onboarding");
+        }
+      } else {
+        clearUserState();
+      }
+    } else {
+      clearUserState();
+    }
+  };
+
+  const clearUserState = () => {
+    setCurrentUser(null);
+    setCurrentSpace(null);
+    setPartnerUser(null);
+    setCurrentView("landing");
+  };
+
+  // AUTH ACTIONS
+  const handleAuthSubmit = () => {
+    if (!authEmail || !authPassword) return alert("Fill in required fields.");
+
+    try {
+      if (authModal === "signup") {
+        if (!authName) return alert("Please enter your name");
+        const colors = ["#ff5a79", "#8a4fff", "#4dbcff", "#00e676", "#ffb800"];
+        const col = colors[Math.floor(Math.random() * colors.length)];
+        const user = DB.register(authEmail, authPassword, authName, col);
+        localStorage.setItem(DB.KEYS.ACTIVE_USER, user.id);
+      } else {
+        DB.login(authEmail, authPassword);
+      }
+
+      setAuthModal(null);
+      setAuthName("");
+      setAuthEmail("");
+      setAuthPassword("");
+      loadState();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(DB.KEYS.ACTIVE_USER);
+    clearUserState();
+  };
+
+  // ONBOARDING ACTIONS
+  const handleCreateSpace = () => {
+    if (!currentUser) return;
+    DB.createSpace(currentUser.id, onboardMode);
+    loadState();
+  };
+
+  const handleJoinSpace = () => {
+    if (!currentUser || !onboardCode.trim()) return alert("Enter code");
+    try {
+      DB.joinSpace(currentUser.id, onboardCode.trim());
+      loadState();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  // MOOD CHECK-IN
+  const handleMoodSelect = (mood, label) => {
+    if (!currentUser) return;
+    DB.updateMood(currentUser.id, mood, label);
+    loadState();
+  };
+
+  // DAILY QUESTIONS ACTIONS
+  const handleAnswerSubmit = (qId) => {
+    if (!currentSpace || !currentUser || !dailyAnswerInput.trim()) return;
+    DB.submitAnswer(currentSpace.id, currentUser.id, qId, dailyAnswerInput.trim());
+    setDailyAnswerInput("");
+    loadState();
+  };
+
+  // CHALLENGE CHECKBOX CLICK
+  const handleChallengeToggle = (challengeId, isCompleted) => {
+    if (!currentSpace || !currentUser || isCompleted) return;
+    DB.completeChallenge(currentSpace.id, currentUser.id, challengeId);
+    loadState();
+  };
+
+  // CHAT ACTIONS
+  const handleSendChat = () => {
+    if (!currentSpace || !currentUser || !chatMessage.trim()) return;
+    DB.sendChatMessage(currentSpace.id, currentUser.id, chatMessage.trim());
+    setChatMessage("");
+    loadState();
+  };
+
+  const simulatePartnerVoiceNote = () => {
+    if (!currentSpace || !partnerUser) return;
+    DB.sendChatMessage(currentSpace.id, partnerUser.id, "🎙️ Shared a voice note connection challenge completed!");
+    loadState();
+  };
+
+  const simulatePartnerPhotoShare = () => {
+    if (!currentSpace || !partnerUser) return;
+    const samplePhotos = [
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDReGZZUrdhhr7TxziKhlt7pK2AfS3fv67g8JBkjZ5THfKhgAppPcI_hsq-Rj74BSl6MJguOQlVyC2pWGN5WvEtk4h1Ls0_1WUboTT4FGyNzcfzF45b9HFWFMdovEu2qsxqgbvgAO34HuQGor8lTAinKctbz_B2aQeoqEbVNq3yEdN0Sk8bnu-0XlL8SWW5BiT_1ualIi82x5oKVv78zAQPVD3_03QNuztkYizP_DKlVIMID0-GNGPK",
+    ];
+    DB.sendChatMessage(currentSpace.id, partnerUser.id, "Reminds me of our special walk! 🍂", samplePhotos[0]);
+    loadState();
+  };
+
+  // MEMORIES ACTIONS
+  const handleSaveMemory = () => {
+    if (!currentSpace || !memoryTitleInput.trim() || !memoryDetailsInput.trim()) {
+      return alert("Title and Details are required to capture a memory!");
+    }
+    DB.addMemory(currentSpace.id, memoryImage ? "photo" : "milestone", memoryTitleInput.trim(), memoryDetailsInput.trim(), memoryImage);
+    setMemoryTitleInput("");
+    setMemoryDetailsInput("");
+    setMemoryImage(null);
+    loadState();
+    setCurrentView("memories");
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setMemoryImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // SETTINGS PROFILE ACTIONS
+  const handleProfileSave = () => {
+    if (!profileName.trim()) return alert("Name cannot be empty");
+    const users = DB.get(DB.KEYS.USERS);
+    const u = users.find((x) => x.id === currentUser.id);
+    if (u) {
+      u.name = profileName.trim();
+      DB.set(DB.KEYS.USERS, users);
+      loadState();
+      alert("Profile saved!");
+    }
+  };
+
+  const handleLeaveSpace = () => {
+    if (!currentSpace || !currentUser) return;
+    if (confirm("Are you sure you want to delete and leave this shared connection space? All chat messages and daily streaks will be cleared.")) {
+      DB.leaveSpace(currentUser.id, currentSpace.id);
+      loadState();
+    }
+  };
+
+  // METRICS CALCULATOR
+  const calculateProgressScore = (category) => {
+    if (!currentSpace) return 0;
+    const completions = DB.get(DB.KEYS.CHALLENGES).filter((c) => c.spaceId === currentSpace.id);
+    const categoryChallenges = (window.DEFAULT_CHALLENGES || []).filter((c) => c.category === category);
+    
+    if (categoryChallenges.length === 0) return 0;
+    
+    let completedCount = 0;
+    categoryChallenges.forEach((ch) => {
+      const comp = completions.find((x) => x.challengeId === ch.id);
+      if (comp && (comp.completions[currentSpace.creatorId] || comp.completions[currentSpace.partnerId])) {
+        completedCount++;
+      }
+    });
+
+    return Math.min(Math.round((completedCount / categoryChallenges.length) * 100), 100);
+  };
+
+  // SIMULATOR DEV BUTTONS
+  const devSwitchUser = (uid) => {
+    localStorage.setItem(DB.KEYS.ACTIVE_USER, uid);
+    loadState();
+  };
+
+  const devSimulateChat = () => {
+    if (!currentSpace || !partnerUser) return;
+    const simulatedTexts = [
+      "Hey there! Thinking of you.",
+      "Check out the memory we locked in today!",
+      "Can't wait to hang out this weekend.",
+      "I completed today's appreciation challenge!",
+      "Hope you are having a wonderful day."
+    ];
+    const randomTxt = simulatedTexts[Math.floor(Math.random() * simulatedTexts.length)];
+    DB.sendChatMessage(currentSpace.id, partnerUser.id, randomTxt);
+    loadState();
+  };
+
+  const devSimulateAnswer = () => {
+    if (!currentSpace || !partnerUser) return;
+    const dailyQuestions = DB.getAllQuestions().filter((q) => q.modes.includes(currentSpace.relationshipMode));
+    const dayIndex = currentSpace.streakDays % (dailyQuestions.length || 1);
+    const todayQuestion = dailyQuestions[dayIndex] || dailyQuestions[0];
+
+    const simulatedAnswers = [
+      "Probably the picnic date we had last summer.",
+      "I loved when you texted me random words of support before my interview.",
+      "Definitely going on a road trip to the mountains.",
+      "I've been thinking about how lucky I am to have you around.",
+      "When we cooked dinner together listening to vinyl records."
+    ];
+    const randomAnswer = simulatedAnswers[Math.floor(Math.random() * simulatedAnswers.length)];
+
+    DB.submitAnswer(currentSpace.id, partnerUser.id, todayQuestion.id, randomAnswer);
+    loadState();
+  };
+
+  const devSimulateMood = () => {
+    if (!partnerUser) return;
+    const moods = [
+      { emoji: "😊", label: "Great" },
+      { emoji: "🙂", label: "Good" },
+      { emoji: "😐", label: "Okay" },
+      { emoji: "😔", label: "Not Great" },
+      { emoji: "😢", label: "Difficult" }
+    ];
+    const randomMood = moods[Math.floor(Math.random() * moods.length)];
+    DB.updateMood(partnerUser.id, randomMood.emoji, randomMood.label);
+    loadState();
+  };
+
+  const devResetDB = () => {
+    if (confirm("Reset local mock database to default seeded users (Alice & Bob)?")) {
+      DB.resetDatabase();
+      loadState();
+    }
+  };
+
+  // RENDER HELPERS
+  const dailyQuestions = DB.getAllQuestions().filter((q) => currentSpace && q.modes.includes(currentSpace.relationshipMode));
+  const todayQuestionIndex = currentSpace ? currentSpace.streakDays % (dailyQuestions.length || 1) : 0;
+  const todayQuestion = dailyQuestions[todayQuestionIndex] || dailyQuestions[0];
+
+  const answers = DB.get(DB.KEYS.ANSWERS);
+  const todayAnswerObj = currentSpace && todayQuestion ? answers.find((a) => a.spaceId === currentSpace.id && a.questionId === todayQuestion.id) : null;
+  
+  const creatorAnswer = todayAnswerObj?.answers[currentSpace?.creatorId];
+  const partnerAnswer = todayAnswerObj?.answers[currentSpace?.partnerId];
+  const isQuestionRevealed = !!(creatorAnswer && partnerAnswer);
+
+  const myAnswer = currentUser && todayAnswerObj?.answers[currentUser.id];
+  const partnerAnswerHidden = !!(myAnswer && !partnerAnswer);
+
+  return (
+    <div className="text-on-surface font-body-md min-h-screen antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container relative">
+      <ShaderBackground />
+
+      {/* Floating Memory Bubbles (Decorative) */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="floating-bubble absolute top-[15%] left-[25%] w-[300px] h-[300px] rounded-full bg-white/10 backdrop-blur-md border border-white/20"></div>
+        <div className="floating-bubble absolute bottom-[20%] left-[10%] w-[200px] h-[200px] rounded-full bg-white/10 backdrop-blur-lg border border-white/20"></div>
+        <div className="floating-bubble absolute top-[40%] right-[35%] w-[150px] h-[150px] rounded-full bg-white/10 backdrop-blur-sm border border-white/20"></div>
+      </div>
+
+      <div id="app-container" className="relative z-10 flex">
+        {/* Navigation Sidebar (Desktop) */}
+        {currentUser && currentView !== "landing" && (
+          <aside className="sidebar bg-white/10 dark:bg-inverse-surface/10 backdrop-blur-lg border-r border-white/20 shadow-sm py-8 px-4 z-50 transition-all duration-300 hover:bg-white/20">
+            <div className="mb-12 px-4 cursor-pointer" onClick={() => setCurrentView("home")}>
+              <h1 className="font-headline-sm text-headline-sm text-primary font-bold drop-shadow-sm flex items-center gap-2">
+                <svg className="logo-heart" style={{ width: "24px", height: "24px", fill: "var(--primary)" }} viewBox="0 0 24 24">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                </svg>
+                BetweenUs
+              </h1>
+              <p className="font-caption text-caption text-on-surface-variant mt-1">Our Private Sanctuary</p>
+            </div>
+
+            <nav className="flex-1 space-y-2">
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "home" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("home"); }}>
+                <span className="material-symbols-outlined">home</span>
+                <span className="font-label-md text-label-md">Home</span>
+              </a>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "discover" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("discover"); }}>
+                <span className="material-symbols-outlined">explore</span>
+                <span className="font-label-md text-label-md">Discover</span>
+              </a>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "chat" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("chat"); }}>
+                <span className="material-symbols-outlined">chat_bubble</span>
+                <span className="font-label-md text-label-md">Our Space</span>
+              </a>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "daily" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("daily"); }}>
+                <span className="material-symbols-outlined">calendar_today</span>
+                <span className="font-label-md text-label-md">Daily</span>
+              </a>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "memories" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("memories"); }}>
+                <span className="material-symbols-outlined">auto_stories</span>
+                <span className="font-label-md text-label-md">Memories</span>
+              </a>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "insights" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("insights"); }}>
+                <span className="material-symbols-outlined">insights</span>
+                <span className="font-label-md text-label-md">Insights</span>
+              </a>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "profile" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setCurrentView("profile"); }}>
+                <span className="material-symbols-outlined">person</span>
+                <span className="font-label-md text-label-md">Profile</span>
+              </a>
+            </nav>
+
+            {/* Sidebar User Footer */}
+            <div className="sidebar-footer" style={{ paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,0.2)", marginTop: "20px" }}>
+              <div className="user-avatar-small" style={{ background: currentUser.avatarColor }}>
+                {currentUser.name[0].toUpperCase()}
+              </div>
+              <div className="user-info-small">
+                <span className="user-name-small">{currentUser.name}</span>
+                <span className="user-status-small">{currentSpace ? "Connected" : "Single Space"}</span>
+              </div>
+            </div>
+
+            {/* Admin Link */}
+            <div style={{ paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.2)", marginTop: "12px" }}>
+              <a href="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant/60 font-medium hover:bg-white/30 hover:text-primary transition-all duration-200">
+                <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>lock</span>
+                <span className="font-label-md text-label-md" style={{ fontSize: "0.85rem" }}>Admin Dashboard</span>
+              </a>
+            </div>
+          </aside>
+        )}
+
+        {/* Main Content Area */}
+        <main className={`main-content flex-1 min-h-screen ${(!currentUser || currentView === "landing") ? "ml-0 w-full" : ""}`} style={{ marginLeft: currentUser && currentView !== "landing" ? "var(--sidebar-width)" : "0" }}>
+          
+          {/* VIEW: LANDING */}
+          {currentView === "landing" && (
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto px-margin-mobile md:px-margin-desktop py-xl">
+              <div className="flex flex-col items-center text-center mb-xl pt-lg relative">
+                <h1 className="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-on-surface mb-md max-w-4xl">
+                  Because the people we love deserve more than "How are you?"
+                </h1>
+                <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mb-lg">
+                  Answer. Share. Listen. Grow closer every day, no matter the distance.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-md items-center justify-center">
+                  <button className="bg-primary text-on-primary px-8 py-4 rounded-full font-label-md text-label-md btn-hover-lift" onClick={() => setAuthModal("signup")}>
+                    Create Your BetweenUs
+                  </button>
+                  <button className="glass-card text-primary px-8 py-4 rounded-full font-label-md text-label-md btn-hover-lift flex items-center gap-2" onClick={() => setAuthModal("signin")}>
+                    <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>key</span>
+                    Join With a Code
+                  </button>
+                </div>
+
+                <div className="mt-xl w-full max-w-5xl h-[400px] md:h-[600px] glass-card rounded-[32px] soft-shadow overflow-hidden relative">
+                  <div className="w-full h-full bg-cover bg-center opacity-90 mix-blend-multiply" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDReGZZUrdhhr7TxziKhlt7pK2AfS3fv67g8JBkjZ5THfKhgAppPcI_hsq-Rj74BSl6MJguOQlVyC2pWGN5WvEtk4h1Ls0_1WUboTT4FGyNzcfzF45b9HFWFMdovEu2qsxqgbvgAO34HuQGor8lTAinKctbz_B2aQeoqEbVNq3yEdN0Sk8bnu-0XlL8SWW5BiT_1ualIi82x5oKVv78zAQPVD3_03QNuztkYizP_DKlVIMID0-GNGPK')" }}></div>
+                  <div className="absolute top-1/4 left-10 glass-card p-4 rounded-xl soft-shadow transform -rotate-3 hidden md:flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+                      <span className="material-symbols-outlined">favorite</span>
+                    </div>
+                    <div>
+                      <p class="font-label-md text-label-md text-on-surface">Daily Prompt Answered</p>
+                      <p className="font-caption text-caption text-on-surface-variant">Just now</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-outline-variant/40 to-transparent my-xl"></div>
+
+              <div className="py-lg">
+                <div className="text-center mb-lg">
+                  <h2 className="font-headline-md text-headline-md text-on-surface mb-sm">Nurturing Deep Connections</h2>
+                  <p className="font-body-md text-body-md text-on-surface-variant max-w-xl mx-auto">Rituals designed to create a private sanctuary for your relationship.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
+                  <div className="glass-card rounded-2xl p-8 soft-shadow flex flex-col h-full hover:-translate-y-2 transition-transform duration-300">
+                    <div className="w-14 h-14 rounded-full bg-primary-container/30 flex items-center justify-center mb-6 text-primary">
+                      <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>chat_bubble</span>
+                    </div>
+                    <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Daily Question</h3>
+                    <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                      Answer a deep, reflective prompt privately every day. Responses are revealed only once both of you complete it!
+                    </p>
+                  </div>
+                  <div className="glass-card rounded-2xl p-8 soft-shadow flex flex-col h-full hover:-translate-y-2 transition-transform duration-300 relative overflow-hidden">
+                    <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-secondary-container/20 rounded-full blur-xl -z-10"></div>
+                    <div className="w-14 h-14 rounded-full bg-secondary-container/50 flex items-center justify-center mb-6 text-on-secondary-container">
+                      <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
+                    </div>
+                    <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Relationship Streaks</h3>
+                    <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                      Cultivate daily connection habits. Track consecutive streaks, answers, and milestones accomplished together.
+                    </p>
+                  </div>
+                  <div className="glass-card rounded-2xl p-8 soft-shadow flex flex-col h-full hover:-translate-y-2 transition-transform duration-300">
+                    <div className="w-14 h-14 rounded-full bg-tertiary-container/30 flex items-center justify-center mb-6 text-tertiary">
+                      <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>auto_stories</span>
+                    </div>
+                    <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Shared Memories Book</h3>
+                    <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                      Automatically save special answers, shared photos, audio recordings, and connection metrics in a private timeline.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* VIEW: ONBOARDING */}
+          {currentView === "onboarding" && (
+            <section className="view-container active-view w-full max-w-[600px] mx-auto py-xl">
+              <div className="glass-card flex flex-col gap-6">
+                <div>
+                  <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Let's connect your space</h2>
+                  <p className="text-on-surface-variant">Create a private space or join your partner's existing space.</p>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Join Space */}
+                  <div className="p-6 bg-white/20 rounded-2xl border border-white/30 space-y-4">
+                    <h3 className="text-lg font-bold">Have an Invite Code?</h3>
+                    <div className="flex gap-3">
+                      <input type="text" className="input-field flex-1 uppercase font-mono text-center tracking-widest font-bold" placeholder="BU-XXXX-XX" value={onboardCode} onChange={(e) => setOnboardCode(e.target.value)} />
+                      <button className="btn btn-primary" onClick={handleJoinSpace}>Connect</button>
+                    </div>
+                  </div>
+
+                  <div className="text-center font-bold text-on-surface-variant/50">OR</div>
+
+                  {/* Create Space */}
+                  <div className="p-6 bg-white/20 rounded-2xl border border-white/30 space-y-4">
+                    <h3 className="text-lg font-bold">Create a New Space</h3>
+                    <div className="space-y-3">
+                      <div className="input-group">
+                        <label className="input-label">Relationship Mode</label>
+                        <select className="select-field" value={onboardMode} onChange={(e) => setOnboardMode(e.target.value)}>
+                          <option value="couple">💕 Couples Mode</option>
+                          <option value="marriage">💍 Marriage Mode</option>
+                          <option value="long_distance">🌍 Long Distance</option>
+                          <option value="friends">🫂 Friends Mode</option>
+                          <option value="family">🏡 Family Mode</option>
+                          <option value="custom">✨ Custom Space</option>
+                        </select>
+                      </div>
+                      <button className="btn btn-primary w-full py-4" onClick={handleCreateSpace}>Generate Invite Code</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* VIEW: HOME DASHBOARD */}
+          {currentView === "home" && currentSpace && (
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl">
+              <div className="dashboard-grid">
+                <div className="space-y-6">
+                  {/* Partner Status Card */}
+                  <div className="glass-card partner-status-card rounded-3xl">
+                    <div className="relationship-title-wrapper">
+                      <div className="relationship-avatar-pair">
+                        <div className="avatar-one" style={{ background: currentUser.avatarColor }}>
+                          {currentUser.name[0].toUpperCase()}
+                        </div>
+                        <div className="avatar-two" style={{ background: partnerUser?.avatarColor || "#70585b" }}>
+                          {(partnerUser?.name || "P")[0].toUpperCase()}
+                        </div>
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold mb-0.5">{partnerUser ? `${partnerUser.name} & Me` : currentUser.name}</h2>
+                        <p className="text-xs text-on-surface-variant uppercase tracking-wider font-semibold">
+                          Mode: {currentSpace.relationshipMode.replace("_", " ")}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      {partnerUser && (
+                        <div className="text-right hidden sm:block">
+                          <p className="text-xs text-on-surface-variant font-semibold">Partner's mood</p>
+                          <p className="font-bold flex items-center justify-end gap-1">
+                            {partnerUser.mood || "😐"} {partnerUser.moodLabel || "Okay"}
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="w-px h-10 bg-white/20 hidden sm:block"></div>
+
+                      <div className="streak-card">
+                        <div className="streak-info text-right">
+                          <span className="streak-num">🔥 {currentSpace.streakDays}</span>
+                          <span className="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Days streak</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mood Check-In */}
+                  <div className="glass-card mood-widget">
+                    <div>
+                      <h3 className="text-lg font-bold">How are you feeling today?</h3>
+                      <p className="text-sm text-on-surface-variant">Update your mood accent in our private space.</p>
+                    </div>
+
+                    <div className="mood-options-list">
+                      {[
+                        { emoji: "😊", label: "Great", activeClass: "active-mood-great" },
+                        { emoji: "🙂", label: "Good", activeClass: "active-mood-good" },
+                        { emoji: "😐", label: "Okay", activeClass: "active-mood-okay" },
+                        { emoji: "😔", label: "Not Great", activeClass: "active-mood-notgreat" },
+                        { emoji: "😢", label: "Difficult", activeClass: "active-mood-difficult" },
+                      ].map((m) => (
+                        <button
+                          key={m.label}
+                          className={`mood-btn ${currentUser.mood === m.emoji ? m.activeClass : ""}`}
+                          onClick={() => handleMoodSelect(m.emoji, m.label)}
+                        >
+                          <span className="mood-btn-emoji">{m.emoji}</span>
+                          <span className="mood-btn-text">{m.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Daily Activity Status / Quick Links */}
+                  <div className="glass-card flex flex-col sm:flex-row items-center justify-between gap-6">
+                    <div>
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary">calendar_today</span>
+                        Daily Ritual Connection
+                      </h3>
+                      <p className="text-sm text-on-surface-variant">
+                        {isQuestionRevealed 
+                          ? "Today's daily question is fully completed and revealed!" 
+                          : myAnswer 
+                            ? "You answered! Waiting for your partner to respond." 
+                            : "A new deep prompt is waiting. Lock in your answer to reveal both!"}
+                      </p>
+                    </div>
+                    <button className="btn btn-primary" onClick={() => setCurrentView("daily")}>
+                      {isQuestionRevealed ? "View Responses" : "Answer Daily Prompt"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Growth Radar / Sidebar */}
+                <div className="space-y-6">
+                  <div className="glass-card">
+                    <h3 className="text-lg font-bold mb-4">Our Growth Metrics</h3>
+                    <div className="progress-list">
+                      {[
+                        { name: "Communication", colorClass: "" },
+                        { name: "Quality Time", colorClass: "progress-bar-fill-violet" },
+                        { name: "Appreciation", colorClass: "" },
+                        { name: "Understanding", colorClass: "progress-bar-fill-violet" },
+                      ].map((cat) => {
+                        const score = calculateProgressScore(cat.name);
+                        return (
+                          <div key={cat.name} className="progress-bar-container">
+                            <div className="progress-label-row">
+                              <span className="progress-label-name">{cat.name}</span>
+                              <span className="progress-label-val">{score}%</span>
+                            </div>
+                            <div className="progress-bar-bg">
+                              <div className={`progress-bar-fill ${cat.colorClass}`} style={{ width: `${score}%` }}></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Simulated Partner Status Details */}
+                  {partnerUser && (
+                    <div className="glass-card p-6 border border-primary-container/20">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant mb-3">Partner Session</h3>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center font-bold text-white text-sm" style={{ background: partnerUser.avatarColor }}>
+                          {partnerUser.name[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm">{partnerUser.name}</p>
+                          <p className="text-xs text-on-surface-variant">Last active mood time: {partnerUser.moodTime ? new Date(partnerUser.moodTime).toLocaleTimeString() : "N/A"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* VIEW: DISCOVER Starter Advice */}
+          {currentView === "discover" && (
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl">
+              <div>
+                <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Discover Starter Advice</h2>
+                <p className="text-on-surface-variant">Curated resources and reading materials for strong communication and connection rituals.</p>
+              </div>
+
+              <div className="discover-grid">
+                {DEFAULT_DISCOVER.map((art) => (
+                  <div key={art.id} className="glass-card discover-card">
+                    <div className="discover-meta">
+                      <span className="text-primary font-bold">{art.category}</span>
+                      <span>{art.readTime}</span>
+                    </div>
+                    <h3 className="text-lg font-bold leading-tight">{art.title}</h3>
+                    <p className="text-sm flex-1 text-on-surface-variant">{art.summary}</p>
+                    <button className="btn btn-glass btn-open-article self-start text-xs py-2 px-4" onClick={() => setActiveArticle(art)}>
+                      Read Article
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* VIEW: CHAT (OUR SPACE) */}
+          {currentView === "chat" && currentSpace && (
+            <section className="view-container active-view w-full max-w-[900px] mx-auto py-xl">
+              <div className="glass-card chat-window flex flex-col rounded-3xl overflow-hidden relative">
+                {/* Chat Header */}
+                <div className="chat-header">
+                  <div className="chat-partner-info">
+                    <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center font-bold text-white text-sm" style={{ background: partnerUser?.avatarColor || "#70585b" }}>
+                      {(partnerUser?.name || "P")[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-base">{partnerUser ? partnerUser.name : "Partner space"}</h3>
+                      <p className="text-xs text-on-surface-variant">Connected in relationship chat log</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button className="btn btn-glass py-1.5 px-3 text-xs" onClick={simulatePartnerVoiceNote}>🎙️ Sim Voice</button>
+                    <button className="btn btn-glass py-1.5 px-3 text-xs" onClick={simulatePartnerPhotoShare}>📷 Sim Photo</button>
+                  </div>
+                </div>
+
+                {/* Chat Messages */}
+                <div className="chat-messages">
+                  {DB.get(DB.KEYS.CHATS)
+                    .filter((c) => c.spaceId === currentSpace.id)
+                    .map((msg, idx) => {
+                      const isMe = msg.senderId === currentUser.id;
+                      const sender = isMe ? currentUser : partnerUser;
+                      
+                      return (
+                        <div key={idx} className={`chat-bubble-wrapper ${isMe ? "outgoing" : "incoming"}`}>
+                          <div className="chat-bubble">
+                            {!isMe && (
+                              <span className="text-[10px] block font-bold text-primary mb-1 uppercase tracking-widest">{sender?.name || "Partner"}</span>
+                            )}
+                            <p className="text-sm">{msg.text}</p>
+                            {msg.media && (
+                              <img src={msg.media} alt="Shared attachment" className="mt-2 rounded-xl cursor-pointer hover:opacity-90 max-h-48 object-cover" onClick={() => setActiveImagePreview(msg.media)} />
+                            )}
+                          </div>
+                          <span className="chat-meta text-[10px] text-on-surface-variant/60 mt-1">
+                            {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  <div ref={chatMessagesEndRef} />
+                </div>
+
+                {/* Chat Input Footer */}
+                <div className="chat-footer">
+                  <div className="chat-input-wrapper">
+                    <input 
+                      type="text" 
+                      className="chat-input" 
+                      placeholder="Type a message or trigger partner logs..." 
+                      value={chatMessage} 
+                      onChange={(e) => setChatMessage(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendChat()} 
+                    />
+                  </div>
+                  <button className="chat-send-btn" onClick={handleSendChat}>
+                    <svg viewBox="0 0 24 24">
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* VIEW: DAILY RITUALS */}
+          {currentView === "daily" && currentSpace && (
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl">
+              <div className="daily-activities-container">
+                {/* 3D Question Card Flipping */}
+                <div className="question-panel">
+                  <div>
+                    <h3 className="text-2xl font-bold font-headline-sm text-primary mb-1">Question of the day</h3>
+                    <p className="text-sm text-on-surface-variant">Strengthen connection through shared responses.</p>
+                  </div>
+
+                  <div className="card-perspective-container">
+                    <div className={`flip-card-inner h-full w-full ${isQuestionRevealed ? "revealed" : ""}`}>
+                      
+                      {/* Front Card Face (Locked or form) */}
+                      <div className="card-face card-front flex flex-col justify-between">
+                        {todayQuestion ? (
+                          <>
+                            <div className="q-category-tag bg-primary/10 border border-primary/20 text-primary self-center px-4 py-1.5 rounded-full font-bold uppercase tracking-widest text-xs">
+                              {todayQuestion.category}
+                            </div>
+                            
+                            <h2 className="q-text text-xl font-bold text-center text-on-surface leading-snug px-6">
+                              {todayQuestion.text}
+                            </h2>
+
+                            {myAnswer ? (
+                              <div className="q-locked-overlay">
+                                <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 animate-pulse">lock</span>
+                                <p className="text-sm text-on-surface-variant px-4">
+                                  You've answered! Responses reveal once partner ({partnerUser?.name || "partner"}) replies.
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="w-full space-y-3">
+                                <textarea 
+                                  className="w-full bg-white/20 border border-white/40 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-on-surface" 
+                                  placeholder="Write your secret answer here..." 
+                                  rows="3"
+                                  value={dailyAnswerInput}
+                                  onChange={(e) => setDailyAnswerInput(e.target.value)}
+                                />
+                                <button className="btn btn-primary w-full py-3" onClick={() => handleAnswerSubmit(todayQuestion.id)}>
+                                  Lock In Answer
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p>Loading today's connect prompts...</p>
+                        )}
+                      </div>
+
+                      {/* Back Card Face (Revealed answers) */}
+                      <div className="card-face card-back flex flex-col justify-between">
+                        {todayQuestion && isQuestionRevealed && (
+                          <>
+                            <div className="q-category-tag bg-primary/15 border border-primary/30 text-primary self-center px-4 py-1 rounded-full font-bold uppercase tracking-wider text-xs">
+                              Prompts Revealed
+                            </div>
+
+                            <div className="revealed-answers-grid flex-1 flex flex-col sm:flex-row gap-4 mt-6 mb-6">
+                              <div className="answer-bubble flex-1">
+                                <div className="answer-author-row flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center font-bold text-xs text-white" style={{ background: currentUser.avatarColor }}>
+                                    {currentUser.name[0].toUpperCase()}
+                                  </div>
+                                  <span className="font-bold text-sm">{currentUser.name}</span>
+                                </div>
+                                <p className="answer-text-content mt-3 text-sm italic">{creatorAnswer?.text}</p>
+                              </div>
+                              
+                              <div className="answer-bubble flex-1">
+                                <div className="answer-author-row flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center font-bold text-xs text-white" style={{ background: partnerUser?.avatarColor || "#70585b" }}>
+                                    {(partnerUser?.name || "P")[0].toUpperCase()}
+                                  </div>
+                                  <span className="font-bold text-sm">{partnerUser?.name || "Partner"}</span>
+                                </div>
+                                <p className="answer-text-content mt-3 text-sm italic">{partnerAnswer?.text}</p>
+                              </div>
+                            </div>
+
+                            <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-widest text-center">Streak Active - Revealed</p>
+                          </>
+                        )}
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+
+                {/* Challenges Panel */}
+                <div className="challenges-panel">
+                  <div>
+                    <h3 className="text-2xl font-bold font-headline-sm text-primary mb-1">Daily connection checklists</h3>
+                    <p className="text-sm text-on-surface-variant">Perform simple micro-challenges to secure streaks.</p>
+                  </div>
+
+                  <div className="challenge-list">
+                    {DB.get(DB.KEYS.CHALLENGES)
+                      .filter((ch) => ch.spaceId === currentSpace.id)
+                      .map((comp) => {
+                        const challenge = (window.DEFAULT_CHALLENGES || []).find((c) => c.id === comp.challengeId);
+                        if (!challenge) return null;
+
+                        const myComp = !!comp.completions[currentUser.id];
+                        const partnerComp = partnerUser ? !!comp.completions[partnerUser.id] : false;
+                        const bothComp = myComp && partnerComp;
+
+                        return (
+                          <div key={challenge.id} className={`glass-card challenge-card rounded-2xl ${bothComp ? "completed" : ""}`}>
+                            <div className="challenge-details">
+                              <span className="challenge-points">+{challenge.points} pts</span>
+                              <span className="challenge-text text-sm font-semibold">{challenge.text}</span>
+                              <div className="flex gap-2 mt-1">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${myComp ? "bg-primary/20 text-primary border-primary/30" : "bg-white/5 border-white/10 text-on-surface-variant"}`}>Me</span>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${partnerComp ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/30" : "bg-white/5 border-white/10 text-on-surface-variant"}`}>Partner</span>
+                              </div>
+                            </div>
+                            <div className="challenge-checkbox" onClick={() => handleChallengeToggle(challenge.id, myComp)}>
+                              <svg viewBox="0 0 24 24">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+              </div>
+            </section>
+          )}
+
+          {/* VIEW: MEMORIES timeline stream */}
+          {currentView === "memories" && currentSpace && (
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl flex flex-col md:flex-row gap-8">
+              
+              {/* Memories sidebar capture form */}
+              <div className="w-full md:w-80 space-y-6">
+                <div className="glass-card flex flex-col gap-4">
+                  <h3 className="text-xl font-bold text-primary">Capture a Memory</h3>
+                  <p className="text-xs text-on-surface-variant">Lock a photo or milestone description permanently in our memories stream.</p>
+                  
+                  <div className="modal-form">
+                    <div className="relative group w-full h-40 bg-white/20 border border-dashed border-white/40 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => document.getElementById("mem-image-picker").click()}>
+                      {memoryImage ? (
+                        <img src={memoryImage} alt="Selected preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="text-center text-on-surface-variant">
+                          <span className="material-symbols-outlined text-3xl">add_photo_alternate</span>
+                          <p className="text-[10px] font-bold uppercase tracking-widest mt-1">Upload image</p>
+                        </div>
+                      )}
+                      <input type="file" id="mem-image-picker" accept="image/*" className="hidden" onChange={handleImageSelect} />
+                    </div>
+
+                    <div className="input-group">
+                      <label className="input-label">Memory Title</label>
+                      <input type="text" className="input-field text-sm" placeholder="e.g. Our Picnic Date" value={memoryTitleInput} onChange={(e) => setMemoryTitleInput(e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">Details & Notes</label>
+                      <textarea className="input-field text-sm" placeholder="Write something sweet..." rows="3" value={memoryDetailsInput} onChange={(e) => setMemoryDetailsInput(e.target.value)} />
+                    </div>
+                    <button className="btn btn-primary w-full py-3" onClick={handleSaveMemory}>Save to Stream</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Memories stream grid */}
+              <div className="flex-1 space-y-6">
+                <div className="memories-header-row">
+                  <div>
+                    <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Our shared memories</h2>
+                    <p className="text-on-surface-variant">Chronological archive of photos, daily Q&As, and key milestones.</p>
+                  </div>
+                </div>
+
+                <div className="memories-grid">
+                  {DB.get(DB.KEYS.MEMORIES)
+                    .filter((m) => m.spaceId === currentSpace.id)
+                    .map((mem) => {
+                      let tagClass = "tag-milestone";
+                      if (mem.type === "question") tagClass = "tag-question";
+                      if (mem.type === "photo") tagClass = "tag-photo";
+                      
+                      return (
+                        <div key={mem.id} className="glass-card memory-card rounded-3xl">
+                          <div className="flex justify-between items-start">
+                            <span className={`memory-tag font-bold ${tagClass}`}>{mem.type}</span>
+                            <span className="memory-date text-[10px] font-bold uppercase tracking-wider">{mem.timestamp ? new Date(mem.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : ""}</span>
+                          </div>
+                          
+                          <div>
+                            <h3 className="font-bold text-base leading-snug mb-2">{mem.title}</h3>
+                            <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">{mem.detail}</p>
+                          </div>
+
+                          {mem.media && (
+                            <img src={mem.media} alt="Memory illustration" className="memory-photo cursor-pointer hover:opacity-95" onClick={() => setActiveImagePreview(mem.media)} />
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+            </section>
+          )}
+
+          {/* VIEW: INSIGHTS */}
+          {currentView === "insights" && currentSpace && (
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl">
+              <div>
+                <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Relationship Insights</h2>
+                <p className="text-on-surface-variant">Analyze communication trends, streak consistency, and growth areas.</p>
+              </div>
+
+              <div className="insights-grid">
+                {/* Visual Bar Chart */}
+                <div className="glass-card flex flex-col gap-4">
+                  <h3 className="text-lg font-bold">Growth Areas Breakdown</h3>
+                  <p className="text-xs text-on-surface-variant mb-4">Active score derived from daily checklist participation</p>
+                  
+                  <div className="chart-placeholder-container flex-1">
+                    {[
+                      { label: "Comm.", cat: "Communication", isViolet: false },
+                      { label: "Time", cat: "Quality Time", isViolet: true },
+                      { label: "Apprec.", cat: "Appreciation", isViolet: false },
+                      { label: "Unders.", cat: "Understanding", isViolet: true },
+                    ].map((item) => {
+                      const score = calculateProgressScore(item.cat);
+                      return (
+                        <div key={item.label} className="chart-bar-item">
+                          <span className="chart-bar-val">{score}%</span>
+                          <div className={`chart-bar-fill ${item.isViolet ? "violet-fill" : ""}`} style={{ height: `${score}%` }}></div>
+                          <span className="chart-bar-label font-bold mt-2">{item.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Weekly Connection Tips */}
+                <div className="glass-card flex flex-col gap-4">
+                  <h3 className="text-lg font-bold">Connection Action Tips</h3>
+                  <div className="insight-tips-list flex-1 flex flex-col gap-3 justify-center">
+                    <div className="tip-item">
+                      <span className="material-symbols-outlined text-primary text-3xl">chat</span>
+                      <div>
+                        <h4 className="font-bold text-sm">Practice verbal check-ins</h4>
+                        <p className="text-xs text-on-surface-variant mt-1">Your communication score is rising! Make sure to follow up on today's revealed answers in chat.</p>
+                      </div>
+                    </div>
+
+                    <div className="tip-item">
+                      <span className="material-symbols-outlined text-primary text-3xl">favorite</span>
+                      <div>
+                        <h4 className="font-bold text-sm">Express appreciation weekly</h4>
+                        <p className="text-xs text-on-surface-variant mt-1">Complete more daily challenges together to boost your Appreciation score higher!</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* VIEW: SETTINGS & PROFILE */}
+          {currentView === "profile" && currentUser && (
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl">
+              <div>
+                <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Settings & Profile</h2>
+                <p className="text-on-surface-variant">Update credentials, profile accents, or check space invite settings.</p>
+              </div>
+
+              <div className="insights-grid">
+                {/* Profile Card */}
+                <div className="glass-card flex flex-col gap-6">
+                  <h3 className="text-xl font-bold text-primary">Your Profile</h3>
+                  
+                  <div className="modal-form">
+                    <div className="flex items-center gap-5">
+                      <div className="user-avatar-small flex items-center justify-center font-bold text-white text-xl" style={{ background: currentUser.avatarColor, width: "60px", height: "60px" }}>
+                        {currentUser.name[0].toUpperCase()}
+                      </div>
+                      <div className="space-y-2">
+                        <span className="input-label">Avatar Accent Color</span>
+                        <div className="flex gap-2">
+                          {["#ff5a79", "#8a4fff", "#4dbcff", "#00e676", "#ffb800"].map((col) => (
+                            <span 
+                              key={col} 
+                              className="w-6 h-6 rounded-full cursor-pointer border border-white/30 hover:scale-110 transition-transform" 
+                              style={{ background: col }}
+                              onClick={() => {
+                                const users = DB.get(DB.KEYS.USERS);
+                                const u = users.find((x) => x.id === currentUser.id);
+                                if (u) {
+                                  u.avatarColor = col;
+                                  DB.set(DB.KEYS.USERS, users);
+                                  loadState();
+                                }
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="input-group">
+                      <label className="input-label">Full Name</label>
+                      <input type="text" className="input-field" value={profileName} onChange={(e) => setProfileName(e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">Email Address</label>
+                      <input type="email" className="input-field opacity-60 cursor-not-allowed" value={currentUser.email} disabled />
+                    </div>
+                    
+                    <div className="flex gap-3 pt-2">
+                      <button className="btn btn-primary" onClick={handleProfileSave}>Save Profile</button>
+                      <button className="btn btn-glass" onClick={handleLogout}>Log Out</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Space Settings Card */}
+                <div className="glass-card flex flex-col gap-6">
+                  <h3 className="text-xl font-bold text-primary">Space Settings</h3>
+                  {currentSpace ? (
+                    <div className="space-y-4">
+                      <div>
+                        <span className="input-label">Space ID</span>
+                        <div className="font-mono text-sm font-semibold mt-1 text-on-surface">{currentSpace.id}</div>
+                      </div>
+                      <div>
+                        <span className="input-label">Invite Code</span>
+                        <div className="font-mono text-xl font-bold mt-1 text-primary tracking-widest">{currentSpace.code}</div>
+                      </div>
+                      <div>
+                        <span className="input-label">Relationship Mode</span>
+                        <div className="text-sm font-bold mt-1 uppercase tracking-wider text-on-surface-variant">{currentSpace.relationshipMode.replace("_", " ")}</div>
+                      </div>
+                      <div className="pt-4 border-t border-white/20">
+                        <button className="btn btn-glass border-red-500/30 text-red-500 hover:bg-red-500/10" onClick={handleLeaveSpace}>
+                          Leave Shared Space
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-on-surface-variant">You are not connected to any space yet.</p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+        </main>
+      </div>
+
+      {/* Shared Auth Modal Overlay */}
+      {authModal && (
+        <div className="modal-overlay flex" onClick={() => setAuthModal(null)}>
+          <div className="modal-content glass-card rounded-[28px] p-8" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setAuthModal(null)}>&times;</button>
+            <div className="modal-header">
+              <h3 className="text-2xl font-bold text-primary">
+                {authModal === "signup" ? "Create BetweenUs Account" : "Welcome Back"}
+              </h3>
+              <p className="text-sm text-on-surface-variant mt-1">
+                {authModal === "signup" ? "Get closer to the people you love." : "Log in to access your shared connection spaces."}
+              </p>
+            </div>
+            
+            <div className="modal-form mt-4">
+              {authModal === "signup" && (
+                <div className="input-group">
+                  <label className="input-label">Full Name</label>
+                  <input type="text" className="input-field" placeholder="e.g. Alice Miller" value={authName} onChange={(e) => setAuthName(e.target.value)} />
+                </div>
+              )}
+              <div className="input-group">
+                <label className="input-label">Email Address</label>
+                <input type="email" className="input-field" placeholder="alice@example.com" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Password</label>
+                <input type="password" className="input-field" placeholder="Password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} />
+              </div>
+              
+              <button className="btn btn-primary w-full py-4 mt-2" onClick={handleAuthSubmit}>
+                {authModal === "signup" ? "Sign Up" : "Log In"}
+              </button>
+              
+              <p className="text-xs text-center text-on-surface-variant">
+                {authModal === "signup" ? "Already have an account?" : "Need a new space?"}{" "}
+                <a href="#" className="text-primary font-bold hover:underline" onClick={(e) => { e.preventDefault(); setAuthModal(authModal === "signup" ? "signin" : "signup"); }}>
+                  {authModal === "signup" ? "Sign In" : "Sign Up"}
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Article Reader Modal */}
+      {activeArticle && (
+        <div className="modal-overlay flex" onClick={() => setActiveArticle(null)}>
+          <div className="modal-content glass-card rounded-[28px] max-w-xl p-8 overflow-y-auto max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setActiveArticle(null)}>&times;</button>
+            <span className="text-primary font-bold uppercase tracking-widest text-xs block mb-1">
+              {activeArticle.category} • {activeArticle.readTime}
+            </span>
+            <h2 className="text-2xl font-bold mb-4">{activeArticle.title}</h2>
+            <p className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap">{activeArticle.content}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
+      {activeImagePreview && (
+        <div className="modal-overlay flex" onClick={() => setActiveImagePreview(null)}>
+          <div className="max-w-[90vw] max-h-[90vh] overflow-hidden rounded-3xl relative" onClick={(e) => e.stopPropagation()}>
+            <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 text-white text-2xl flex items-center justify-center cursor-pointer hover:bg-black/70" onClick={() => setActiveImagePreview(null)}>&times;</button>
+            <img src={activeImagePreview} alt="Full screen preview" className="w-full h-full object-contain max-h-[85vh]" />
+          </div>
+        </div>
+      )}
+
+      {/* Dev Testing Collapsible Toolbar */}
+      <div className={`dev-toolbar ${devToolbarCollapsed ? "collapsed" : ""}`}>
+        <div className="dev-toolbar-header" onClick={() => setDevToolbarCollapsed(!devToolbarCollapsed)}>
+          <span className="dev-toolbar-title">
+            <span>🛠️</span> BETWEENUS NEXT.JS DEV PANEL & MULTI-USER SIMULATOR
+          </span>
+          <span id="dev-toolbar-chevron" className="text-xs">
+            {devToolbarCollapsed ? "[Click to Expand]" : "[Click to Collapse]"}
+          </span>
+        </div>
+        
+        <div className="dev-toolbar-body">
+          <div className="dev-toolbar-sections">
+            <div className="dev-tool-group">
+              <span className="dev-tool-label">Switch Active:</span>
+              {DB.get(DB.KEYS.USERS).map((u) => {
+                const isActive = currentUser?.id === u.id;
+                return (
+                  <button 
+                    key={u.id} 
+                    className={`btn btn-glass py-1 px-2.5 text-xs font-mono ${isActive ? "dev-btn-active-user" : ""}`}
+                    onClick={() => devSwitchUser(u.id)}
+                  >
+                    {u.name}
+                  </button>
+                );
+              })}
+            </div>
+
+            {currentSpace && partnerUser && (
+              <div className="dev-tool-group border-l border-white/20 pl-4">
+                <span className="dev-tool-label">Simulate Partner ({partnerUser.name}):</span>
+                <button className="btn btn-glass py-1 px-2 text-xs" onClick={devSimulateChat}>Chat Msg</button>
+                <button className="btn btn-glass py-1 px-2 text-xs" onClick={devSimulateAnswer}>Answer Q</button>
+                <button className="btn btn-glass py-1 px-2 text-xs" onClick={devSimulateMood}>Set Mood 😢</button>
+              </div>
+            )}
+          </div>
+          
+          <div>
+            <button className="btn btn-glass py-1 px-3 text-xs border-red-500/20 text-primary" onClick={devResetDB}>
+              Reset Database
+            </button>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  );
+}
