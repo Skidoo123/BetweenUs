@@ -439,89 +439,91 @@ export default function ClientPage() {
   // 1. ISOLATE LANDING VIEW RENDER (No sidebar, no main margins)
   if (currentView === "landing") {
     return (
-      <div className="absolute inset-0 z-0 bg-atmospheric min-h-screen flex flex-col justify-between overflow-hidden text-on-surface font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+      <div className="min-h-[100dvh] flex flex-col justify-between items-center px-6 py-10 text-center relative overflow-hidden bg-atmospheric text-on-surface font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
         
         {/* Ambient Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-          <div className="glass-circle absolute w-[70vw] h-[70vw] rounded-full top-[10%] left-[5%] animate-float-slow mix-blend-screen opacity-70"></div>
-          <div className="glass-circle absolute w-[40vw] h-[40vw] rounded-full top-[40%] right-[-10%] animate-float-medium mix-blend-screen opacity-60"></div>
-          <div className="glass-circle absolute w-[50vw] h-[50vw] rounded-full bottom-[15%] left-[-15%] animate-float-fast mix-blend-screen opacity-50"></div>
-          <div className="absolute top-[30%] right-[20%] w-4 h-4 bg-white rounded-full blur-md animate-pulse-glow"></div>
-          <div className="absolute bottom-[25%] left-[30%] w-6 h-6 bg-primary rounded-full blur-lg animate-pulse-glow" style={{ animationDelay: "2s" }}></div>
+        <div className="pointer-events-none absolute -z-10 inset-0 overflow-hidden">
+          {/* Large top circle */}
+          <div className="glass-circle absolute w-[70vw] h-[70vw] rounded-full top-[10%] left-[5%] animate-float-slow mix-blend-screen opacity-70 pointer-events-none"></div>
+          {/* Medium right circle */}
+          <div className="glass-circle absolute w-[40vw] h-[40vw] rounded-full top-[40%] right-[-10%] animate-float-medium mix-blend-screen opacity-60 pointer-events-none"></div>
+          {/* Small bottom circle */}
+          <div className="glass-circle absolute w-[50vw] h-[50vw] rounded-full bottom-[15%] left-[-15%] animate-float-fast mix-blend-screen opacity-50 pointer-events-none"></div>
+          {/* Subtle glow spots */}
+          <div className="absolute top-[30%] right-[20%] w-4 h-4 bg-white rounded-full blur-md animate-pulse-glow pointer-events-none"></div>
+          <div className="absolute bottom-[25%] left-[30%] w-6 h-6 bg-primary rounded-full blur-lg animate-pulse-glow pointer-events-none" style={{ animationDelay: "2s" }}></div>
         </div>
 
-        <main className="relative z-10 w-full h-[100dvh] flex flex-col items-center justify-between px-6 py-12 md:py-20 max-w-md mx-auto">
-          {/* Header Section */}
-          <header className="w-full text-center space-y-4 animate-fade-in-down">
-            <h2 className="text-primary/85 uppercase tracking-[0.3em] text-xs font-semibold">Reimagined</h2>
-            <h1 className="font-serif text-3xl font-bold tracking-wide text-white drop-shadow-md">
-              BetweenUs
-            </h1>
-          </header>
+        {/* Header Section */}
+        <header className="w-full text-center px-6 space-y-4 animate-fade-in-down flex flex-col items-center">
+          <h2 className="text-primary/85 uppercase tracking-[0.3em] text-xs font-semibold text-center">Reimagined</h2>
+          <h1 className="font-serif text-3xl font-bold tracking-wide text-white drop-shadow-md text-center">
+            BetweenUs
+          </h1>
+        </header>
 
-          {/* Central Messaging */}
-          <section className="flex flex-col items-center justify-center flex-grow text-center space-y-8 mt-8">
-            <div className="space-y-4 animate-fade-in-up">
-              <h2 className="font-serif text-5xl md:text-6xl leading-tight font-semibold text-glow text-white">
-                Our <br/>
-                <span className="italic text-primary/90">Private</span> <br/>
-                Sanctuary
-              </h2>
-              <p className="font-sans text-sm md:text-base font-light text-brand-light/95 max-w-[280px] leading-relaxed mx-auto mt-4">
-                A quiet space meant just for two. Away from the noise, close to the heart.
-              </p>
-            </div>
-            <div className="pt-4 animate-pulse" style={{ animationDuration: "3s" }}>
-              <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 0", fontSize: "32px" }}>
-                favorite
-              </span>
-            </div>
-          </section>
+        {/* Central Messaging */}
+        <section className="flex flex-col items-center justify-center flex-grow text-center space-y-8 mt-8">
+          <div className="space-y-4 animate-fade-in-up">
+            <h2 className="font-serif text-5xl md:text-6xl leading-tight font-semibold text-glow text-white">
+              Our <br/>
+              <span className="italic text-primary/90">Private</span> <br/>
+              Sanctuary
+            </h2>
+            <p className="font-sans text-sm md:text-base font-light text-brand-light/95 max-w-[280px] leading-relaxed mx-auto mt-4">
+              A quiet space meant just for two. Away from the noise, close to the heart.
+            </p>
+          </div>
+          <div className="pt-4 animate-pulse" style={{ animationDuration: "3s" }}>
+            <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 0", fontSize: "32px" }}>
+              favorite
+            </span>
+          </div>
+        </section>
 
-          {/* Action Section */}
-          <section className="w-full pt-8 pb-4 animate-fade-in-up">
-            {currentUser ? (
-              <div className="space-y-4">
-                <button 
-                  className="w-full group relative inline-flex items-center justify-center px-8 py-4 font-medium text-brand-dark bg-primary/95 backdrop-blur-sm rounded-full overflow-hidden transition-all duration-300 hover:bg-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_-10px_rgba(230,199,203,0.5)] cursor-pointer" 
-                  type="button"
-                  onClick={() => setCurrentView(currentUser.currentSpaceId ? "home" : "onboarding")}
-                >
-                  <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-full group-hover:h-56 opacity-10"></span>
-                  <span className="relative tracking-wider font-semibold text-sm text-white hover:text-black">Enter Sanctuary</span>
-                </button>
-                <button 
-                  className="w-full h-12 rounded-full glass-panel text-white font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer" 
-                  type="button"
-                  onClick={handleLogout}
-                >
-                  Sign Out ({currentUser.name})
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <button 
-                  className="w-full group relative inline-flex items-center justify-center px-8 py-4 font-medium text-brand-dark bg-primary/95 backdrop-blur-sm rounded-full overflow-hidden transition-all duration-300 hover:bg-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_-10px_rgba(230,199,203,0.5)] cursor-pointer" 
-                  type="button"
-                  onClick={() => setAuthModal("signup")}
-                >
-                  <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-full group-hover:h-56 opacity-10"></span>
-                  <span className="relative tracking-wider font-semibold text-sm text-white hover:text-black">Get Started</span>
-                </button>
-                <button 
-                  className="w-full h-12 rounded-full glass-panel text-white font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer" 
-                  type="button"
-                  onClick={() => setAuthModal("signin")}
-                >
-                  Welcome Back
-                </button>
-              </div>
-            )}
-            <div className="mt-6 text-center">
-              <p className="text-xs text-brand-light/50">Secured with end-to-end encryption.</p>
+        {/* Action Section */}
+        <section className="w-full pt-8 pb-4 animate-fade-in-up flex flex-col items-center">
+          {currentUser ? (
+            <div className="flex flex-col items-center gap-3 w-full">
+              <button 
+                className="w-full max-w-xs py-3.5 px-6 rounded-full bg-rose-200 text-rose-950 font-medium shadow-md hover:bg-rose-300 transition text-center cursor-pointer"
+                type="button"
+                onClick={() => setCurrentView(currentUser.currentSpaceId ? "home" : "onboarding")}
+              >
+                Enter Sanctuary
+              </button>
+              <button 
+                className="w-full max-w-xs py-2.5 text-center text-rose-100/80 hover:text-white transition cursor-pointer font-medium text-sm"
+                type="button"
+                onClick={handleLogout}
+              >
+                Sign Out ({currentUser.name})
+              </button>
             </div>
-          </section>
-        </main>
+          ) : (
+            <div className="flex flex-col items-center gap-3 w-full">
+              <button 
+                className="w-full max-w-xs py-3.5 px-6 rounded-full bg-rose-200 text-rose-950 font-medium shadow-md hover:bg-rose-300 transition text-center cursor-pointer"
+                type="button"
+                onClick={() => setAuthModal("signup")}
+              >
+                Get Started
+              </button>
+              <button 
+                className="w-full max-w-xs py-2.5 text-center text-rose-100/80 hover:text-white transition cursor-pointer font-medium text-sm"
+                type="button"
+                onClick={() => setAuthModal("signin")}
+              >
+                Welcome Back
+              </button>
+            </div>
+          )}
+          <div className="mt-6 w-full flex justify-center px-6">
+            <p className="max-w-xs text-center text-xs text-rose-200/60 leading-relaxed whitespace-normal">
+              Secured with end-to-end encryption.
+            </p>
+          </div>
+        </section>
         
         {renderAuthModal()}
       </div>
