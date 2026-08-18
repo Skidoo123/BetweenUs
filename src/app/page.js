@@ -375,9 +375,154 @@ export default function ClientPage() {
   const partnerAnswerHidden = !!(myAnswer && !partnerAnswer);
 
   if (!isMounted) {
-    return <div className="text-on-surface bg-background min-h-screen"></div>;
+    return (
+      <div className="bg-atmospheric min-h-screen flex items-center justify-center">
+        <div className="animate-pulse font-serif text-2xl text-white">BetweenUs...</div>
+      </div>
+    );
   }
 
+  // Render auth modal helper
+  const renderAuthModal = () => {
+    if (!authModal) return null;
+    return (
+      <div className="modal-overlay flex" onClick={() => setAuthModal(null)}>
+        <div className="modal-content glass-card rounded-[28px] p-8 animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
+          <button className="modal-close" onClick={() => setAuthModal(null)}>&times;</button>
+          <div className="modal-header">
+            <h3 className="text-2xl font-bold text-primary">
+              {authModal === "signup" ? "Create BetweenUs Account" : "Welcome Back"}
+            </h3>
+            <p className="text-sm text-on-surface-variant mt-1">
+              {authModal === "signup" ? "Get closer to the people you love." : "Log in to access your shared connection spaces."}
+            </p>
+          </div>
+          
+          <div className="modal-form mt-4">
+            {authModal === "signup" && (
+              <div className="input-group">
+                <label className="input-label">Full Name</label>
+                <input type="text" className="input-field" placeholder="e.g. Alice Miller" value={authName} onChange={(e) => setAuthName(e.target.value)} />
+              </div>
+            )}
+            <div className="input-group">
+              <label className="input-label">Email Address</label>
+              <input type="email" className="input-field" placeholder="alice@example.com" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} />
+            </div>
+            <div className="input-group">
+              <label className="input-label">Password</label>
+              <input type="password" className="input-field" placeholder="Password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} />
+            </div>
+            
+            <button className="btn btn-primary w-full py-4 mt-2" onClick={handleAuthSubmit}>
+              {authModal === "signup" ? "Sign Up & Get Started" : "Secure Log In"}
+            </button>
+            
+            <p className="text-xs text-center text-on-surface-variant mt-4">
+              {authModal === "signup" ? "Already have an account?" : "Need a new space?"}{" "}
+              <a href="#" className="text-primary font-bold hover:underline" onClick={(e) => { e.preventDefault(); setAuthModal(authModal === "signup" ? "signin" : "signup"); }}>
+                {authModal === "signup" ? "Sign In" : "Sign Up"}
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 1. ISOLATE LANDING VIEW RENDER (No sidebar, no main margins)
+  if (currentView === "landing") {
+    return (
+      <div className="absolute inset-0 z-0 bg-atmospheric min-h-screen flex flex-col justify-between overflow-hidden text-on-surface font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+        
+        {/* Ambient Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="glass-circle absolute w-[70vw] h-[70vw] rounded-full top-[10%] left-[5%] animate-float-slow mix-blend-screen opacity-70"></div>
+          <div className="glass-circle absolute w-[40vw] h-[40vw] rounded-full top-[40%] right-[-10%] animate-float-medium mix-blend-screen opacity-60"></div>
+          <div className="glass-circle absolute w-[50vw] h-[50vw] rounded-full bottom-[15%] left-[-15%] animate-float-fast mix-blend-screen opacity-50"></div>
+          <div className="absolute top-[30%] right-[20%] w-4 h-4 bg-white rounded-full blur-md animate-pulse-glow"></div>
+          <div className="absolute bottom-[25%] left-[30%] w-6 h-6 bg-primary rounded-full blur-lg animate-pulse-glow" style={{ animationDelay: "2s" }}></div>
+        </div>
+
+        <main className="relative z-10 w-full h-[100dvh] flex flex-col items-center justify-between px-6 py-12 md:py-20 max-w-md mx-auto">
+          {/* Header Section */}
+          <header className="w-full text-center space-y-4 animate-fade-in-down">
+            <h2 className="text-primary/85 uppercase tracking-[0.3em] text-xs font-semibold">Reimagined</h2>
+            <h1 className="font-serif text-3xl font-bold tracking-wide text-white drop-shadow-md">
+              BetweenUs
+            </h1>
+          </header>
+
+          {/* Central Messaging */}
+          <section className="flex flex-col items-center justify-center flex-grow text-center space-y-8 mt-8">
+            <div className="space-y-4 animate-fade-in-up">
+              <h2 className="font-serif text-5xl md:text-6xl leading-tight font-semibold text-glow text-white">
+                Our <br/>
+                <span className="italic text-primary/90">Private</span> <br/>
+                Sanctuary
+              </h2>
+              <p className="font-sans text-sm md:text-base font-light text-brand-light/95 max-w-[280px] leading-relaxed mx-auto mt-4">
+                A quiet space meant just for two. Away from the noise, close to the heart.
+              </p>
+            </div>
+            <div className="pt-4 animate-pulse" style={{ animationDuration: "3s" }}>
+              <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 0", fontSize: "32px" }}>
+                favorite
+              </span>
+            </div>
+          </section>
+
+          {/* Action Section */}
+          <section className="w-full pt-8 pb-4 animate-fade-in-up">
+            {currentUser ? (
+              <div className="space-y-4">
+                <button 
+                  className="w-full group relative inline-flex items-center justify-center px-8 py-4 font-medium text-brand-dark bg-primary/95 backdrop-blur-sm rounded-full overflow-hidden transition-all duration-300 hover:bg-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_-10px_rgba(230,199,203,0.5)] cursor-pointer" 
+                  type="button"
+                  onClick={() => setCurrentView(currentUser.currentSpaceId ? "home" : "onboarding")}
+                >
+                  <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-full group-hover:h-56 opacity-10"></span>
+                  <span className="relative tracking-wider font-semibold text-sm text-white hover:text-black">Enter Sanctuary</span>
+                </button>
+                <button 
+                  className="w-full h-12 rounded-full glass-panel text-white font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer" 
+                  type="button"
+                  onClick={handleLogout}
+                >
+                  Sign Out ({currentUser.name})
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <button 
+                  className="w-full group relative inline-flex items-center justify-center px-8 py-4 font-medium text-brand-dark bg-primary/95 backdrop-blur-sm rounded-full overflow-hidden transition-all duration-300 hover:bg-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_-10px_rgba(230,199,203,0.5)] cursor-pointer" 
+                  type="button"
+                  onClick={() => setAuthModal("signup")}
+                >
+                  <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-full group-hover:h-56 opacity-10"></span>
+                  <span className="relative tracking-wider font-semibold text-sm text-white hover:text-black">Get Started</span>
+                </button>
+                <button 
+                  className="w-full h-12 rounded-full glass-panel text-white font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer" 
+                  type="button"
+                  onClick={() => setAuthModal("signin")}
+                >
+                  Welcome Back
+                </button>
+              </div>
+            )}
+            <div className="mt-6 text-center">
+              <p className="text-xs text-brand-light/50">Secured with end-to-end encryption.</p>
+            </div>
+          </section>
+        </main>
+        
+        {renderAuthModal()}
+      </div>
+    );
+  }
+
+  // 2. RENDERING CORE WORKSPACE SYSTEM (Home, Chat, Discover, Memories, Daily, etc.)
   return (
     <div className="text-on-surface font-body-md min-h-screen antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container relative">
       <ShaderBackground />
@@ -391,7 +536,7 @@ export default function ClientPage() {
 
       <div id="app-container" className="relative z-10 flex">
         {/* Navigation Sidebar (Desktop) */}
-        {currentUser && currentView !== "landing" && (
+        {currentUser && (
           <aside className="sidebar bg-white/10 dark:bg-inverse-surface/10 backdrop-blur-lg border-r border-white/20 shadow-sm py-8 px-4 z-50 transition-all duration-300 hover:bg-white/20">
             <div className="mb-12 px-4 cursor-pointer" onClick={() => setCurrentView("home")}>
               <h1 className="font-headline-sm text-headline-sm text-primary font-bold drop-shadow-sm flex items-center gap-2">
@@ -456,108 +601,11 @@ export default function ClientPage() {
         )}
 
         {/* Main Content Area */}
-        <main className={`main-content flex-1 min-h-screen ${(!currentUser || currentView === "landing") ? "ml-0 w-full" : ""}`} style={{ marginLeft: currentUser && currentView !== "landing" ? "var(--sidebar-width)" : "0", width: currentUser && currentView !== "landing" ? "calc(100% - var(--sidebar-width))" : "100%" }}>
-          
-          {/* VIEW: LANDING */}
-          {currentView === "landing" && (
-            <div className="absolute inset-0 z-0 bg-atmospheric min-h-screen flex flex-col justify-between overflow-hidden">
-              
-              {/* Ambient Background Elements */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                {/* Large top circle */}
-                <div className="glass-circle absolute w-[70vw] h-[70vw] rounded-full top-[10%] left-[5%] animate-float-slow mix-blend-screen opacity-70"></div>
-                {/* Medium right circle */}
-                <div className="glass-circle absolute w-[40vw] h-[40vw] rounded-full top-[40%] right-[-10%] animate-float-medium mix-blend-screen opacity-60"></div>
-                {/* Small bottom circle */}
-                <div className="glass-circle absolute w-[50vw] h-[50vw] rounded-full bottom-[15%] left-[-15%] animate-float-fast mix-blend-screen opacity-50"></div>
-                {/* Subtle glow spots */}
-                <div className="absolute top-[30%] right-[20%] w-4 h-4 bg-white rounded-full blur-md animate-pulse-glow"></div>
-                <div className="absolute bottom-[25%] left-[30%] w-6 h-6 bg-primary rounded-full blur-lg animate-pulse-glow" style={{ animationDelay: "2s" }}></div>
-              </div>
-
-              <main className="relative z-10 w-full h-screen flex flex-col items-center justify-between px-6 py-12 md:py-20 max-w-md mx-auto">
-                {/* Header Section */}
-                <header className="w-full text-center space-y-4 animate-fade-in-down">
-                  <h2 className="text-primary/85 uppercase tracking-[0.3em] text-xs font-semibold">Reimagined</h2>
-                  <h1 className="font-serif text-3xl font-bold tracking-wide text-white drop-shadow-md">
-                    BetweenUs
-                  </h1>
-                </header>
-
-                {/* Central Messaging */}
-                <section className="flex flex-col items-center justify-center flex-grow text-center space-y-8 mt-8">
-                  <div className="space-y-4 animate-fade-in-up">
-                    <h2 className="font-serif text-5xl md:text-6xl leading-tight font-semibold text-glow text-white">
-                      Our <br/>
-                      <span className="italic text-primary/90">Private</span> <br/>
-                      Sanctuary
-                    </h2>
-                    <p className="font-sans text-sm md:text-base font-light text-brand-light/95 max-w-[280px] leading-relaxed mx-auto mt-4">
-                      A quiet space meant just for two. Away from the noise, close to the heart.
-                    </p>
-                  </div>
-
-                  {/* Decorative Element */}
-                  <div className="pt-4 animate-pulse" style={{ animationDuration: "3s" }}>
-                    <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 0", fontSize: "32px" }}>
-                      favorite
-                    </span>
-                  </div>
-                </section>
-
-                {/* Action Section */}
-                <section className="w-full pt-8 pb-4 animate-fade-in-up">
-                  {currentUser ? (
-                    <div className="space-y-4">
-                      <button 
-                        className="w-full group relative inline-flex items-center justify-center px-8 py-4 font-medium text-brand-dark bg-primary/95 backdrop-blur-sm rounded-full overflow-hidden transition-all duration-300 hover:bg-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_-10px_rgba(230,199,203,0.5)]" 
-                        type="button"
-                        onClick={() => setCurrentView(currentUser.currentSpaceId ? "home" : "onboarding")}
-                      >
-                        <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-full group-hover:h-56 opacity-10"></span>
-                        <span className="relative tracking-wider font-semibold text-sm text-white hover:text-black">Enter Sanctuary</span>
-                      </button>
-
-                      <button 
-                        className="w-full h-touch-target rounded-full glass-panel text-white font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] bg-white/10 hover:bg-white/20 border border-white/20" 
-                        type="button"
-                        onClick={handleLogout}
-                      >
-                        Sign Out ({currentUser.name})
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <button 
-                        className="w-full group relative inline-flex items-center justify-center px-8 py-4 font-medium text-brand-dark bg-primary/95 backdrop-blur-sm rounded-full overflow-hidden transition-all duration-300 hover:bg-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_-10px_rgba(230,199,203,0.5)]" 
-                        type="button"
-                        onClick={() => setAuthModal("signup")}
-                      >
-                        <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-full group-hover:h-56 opacity-10"></span>
-                        <span className="relative tracking-wider font-semibold text-sm text-white hover:text-black">Get Started</span>
-                      </button>
-
-                      <button 
-                        className="w-full h-touch-target rounded-full glass-panel text-white font-label-md text-label-md flex items-center justify-center transition-transform active:scale-[0.98] bg-white/10 hover:bg-white/20 border border-white/20" 
-                        type="button"
-                        onClick={() => setAuthModal("signin")}
-                      >
-                        Welcome Back
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="mt-6 text-center">
-                    <p className="text-xs text-brand-light/50">Secured with end-to-end encryption.</p>
-                  </div>
-                </section>
-              </main>
-            </div>
-          )}
+        <main className="main-content flex-1 min-h-screen" style={{ marginLeft: currentUser ? "var(--sidebar-width)" : "0", width: currentUser ? "calc(100% - var(--sidebar-width))" : "100%" }}>
 
           {/* VIEW: ONBOARDING */}
           {currentView === "onboarding" && (
-            <section className="view-container active-view w-full max-w-[600px] mx-auto py-xl">
+            <section className="view-container active-view w-full max-w-[600px] mx-auto py-6 px-4 md:py-12 md:px-8">
               <div className="glass-card flex flex-col gap-6">
                 <div>
                   <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Let's connect your space</h2>
@@ -601,7 +649,7 @@ export default function ClientPage() {
 
           {/* VIEW: HOME DASHBOARD */}
           {currentView === "home" && currentSpace && (
-            <section className="view-container active-view w-full max-w-[1100px] mx-auto py-xl px-4">
+            <section className="view-container active-view w-full max-w-[1100px] mx-auto py-6 px-4 md:py-12 md:px-8">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 {/* Left/Main Columns */}
@@ -738,7 +786,7 @@ export default function ClientPage() {
 
           {/* VIEW: DISCOVER Starter Advice */}
           {currentView === "discover" && (
-            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl">
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 md:py-12 md:px-8">
               <div>
                 <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Discover Starter Advice</h2>
                 <p className="text-on-surface-variant">Curated resources and reading materials for strong communication and connection rituals.</p>
@@ -764,7 +812,7 @@ export default function ClientPage() {
 
           {/* VIEW: CHAT (OUR SPACE) */}
           {currentView === "chat" && currentSpace && (
-            <section className="view-container active-view w-full max-w-[500px] mx-auto py-6 h-[85vh] flex flex-col relative">
+            <section className="view-container active-view w-full max-w-[500px] mx-auto py-4 px-4 flex flex-col h-[calc(100vh-140px)] md:h-[80vh] relative">
               <div className="glass-card chat-window flex-1 flex flex-col rounded-[32px] overflow-hidden relative border border-white/20 shadow-2xl bg-surface/10 backdrop-blur-xl">
                 
                 {/* Header */}
@@ -899,7 +947,7 @@ export default function ClientPage() {
 
           {/* VIEW: DAILY RITUALS */}
           {currentView === "daily" && currentSpace && (
-            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl">
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 md:py-12 md:px-8">
               <div className="daily-activities-container">
                 {/* 3D Question Card Flipping */}
                 <div className="question-panel">
@@ -1034,7 +1082,7 @@ export default function ClientPage() {
 
           {/* VIEW: MEMORIES timeline stream */}
           {currentView === "memories" && currentSpace && (
-            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl flex flex-col md:flex-row gap-8">
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 md:py-12 md:px-8 flex flex-col md:flex-row gap-8">
               
               {/* Memories sidebar capture form */}
               <div className="w-full md:w-80 space-y-6">
@@ -1111,7 +1159,7 @@ export default function ClientPage() {
 
           {/* VIEW: INSIGHTS */}
           {currentView === "insights" && currentSpace && (
-            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl">
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 md:py-12 md:px-8">
               <div>
                 <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Relationship Insights</h2>
                 <p className="text-on-surface-variant">Analyze communication trends, streak consistency, and growth areas.</p>
@@ -1169,7 +1217,7 @@ export default function ClientPage() {
 
           {/* VIEW: SETTINGS & PROFILE */}
           {currentView === "profile" && currentUser && (
-            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-xl">
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 md:py-12 md:px-8">
               <div>
                 <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Settings & Profile</h2>
                 <p className="text-on-surface-variant">Update credentials, profile accents, or check space invite settings.</p>
@@ -1381,7 +1429,7 @@ export default function ClientPage() {
       )}
 
       {/* Dev Testing Collapsible Toolbar */}
-      <div className={`dev-toolbar ${devToolbarCollapsed ? "collapsed" : ""}`}>
+      <div className={`dev-toolbar ${devToolbarCollapsed ? "collapsed" : ""} hidden md:block`}>
         <div className="dev-toolbar-header" onClick={() => setDevToolbarCollapsed(!devToolbarCollapsed)}>
           <span className="dev-toolbar-title">
             <span>🛠️</span> BETWEENUS NEXT.JS DEV PANEL & MULTI-USER SIMULATOR

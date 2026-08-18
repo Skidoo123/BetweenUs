@@ -1461,3 +1461,95 @@ body {
 .animate-pulse-glow {
   animation: pulseGlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Dev Multi-User Control Toolbar */
+.dev-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(27, 16, 27, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-glass);
+  z-index: 10000;
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.4);
+  font-family: monospace;
+  transition: var(--transition-smooth);
+  color: var(--text-primary);
+}
+
+.dev-toolbar.collapsed {
+  transform: translateY(calc(100% - 36px));
+}
+
+.dev-toolbar-header {
+  background: linear-gradient(135deg, var(--surface-variant) 0%, rgba(69, 27, 58, 0.8) 100%);
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.dev-toolbar-title {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#dev-toolbar-chevron {
+  color: var(--text-secondary) !important;
+}
+
+.dev-toolbar-body {
+  padding: 12px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dev-toolbar-sections {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.dev-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dev-tool-group .btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--border-glass) !important;
+  color: var(--text-secondary) !important;
+  transition: var(--transition-smooth);
+}
+
+.dev-tool-group .btn:hover {
+  background: var(--primary) !important;
+  color: var(--text-primary) !important;
+  border-color: transparent !important;
+  transform: translateY(-1px);
+}
+
+.dev-tool-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.dev-btn-active-user {
+  background: var(--primary-rose-gradient) !important;
+  color: #ffffff !important;
+  box-shadow: var(--shadow-glow-rose);
+  border-color: transparent !important;
+}
