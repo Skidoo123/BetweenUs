@@ -8,6 +8,7 @@ import ShaderBackground from "@/components/ShaderBackground";
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [systemLogs, setSystemLogs] = useState([]);
+  const [isMounted, setIsMounted] = useState(false);
   
   // Data State
   const [users, setUsers] = useState([]);
@@ -36,6 +37,7 @@ export default function AdminPage() {
     DB.init();
     loadAdminData();
     logEvent("Admin dashboard loaded. Connected to mock database tables.");
+    setIsMounted(true);
 
     // Sync storage events
     const handleStorageChange = (e) => {
@@ -284,6 +286,10 @@ export default function AdminPage() {
   const friendPct = Math.round((friendSpaces / totalSpacesCount) * 100);
 
   const topStreakVal = spaces.reduce((max, s) => (s.streakDays > max ? s.streakDays : max), 0);
+
+  if (!isMounted) {
+    return <div className="text-on-surface bg-background min-h-screen"></div>;
+  }
 
   return (
     <div className="text-on-surface font-body-md min-h-screen antialiased overflow-x-hidden relative">

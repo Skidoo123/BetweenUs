@@ -10,6 +10,7 @@ export default function ClientPage() {
   const [currentSpace, setCurrentSpace] = useState(null);
   const [partnerUser, setPartnerUser] = useState(null);
   const [currentView, setCurrentView] = useState("landing");
+  const [isMounted, setIsMounted] = useState(false);
   
   // Modals state
   const [authModal, setAuthModal] = useState(null); // 'signup' | 'signin' | null
@@ -48,6 +49,7 @@ export default function ClientPage() {
   useEffect(() => {
     DB.init();
     loadState();
+    setIsMounted(true);
 
     // Event listener for tab sync
     const handleStorageChange = (e) => {
@@ -371,6 +373,10 @@ export default function ClientPage() {
 
   const myAnswer = currentUser && todayAnswerObj?.answers[currentUser.id];
   const partnerAnswerHidden = !!(myAnswer && !partnerAnswer);
+
+  if (!isMounted) {
+    return <div className="text-on-surface bg-background min-h-screen"></div>;
+  }
 
   return (
     <div className="text-on-surface font-body-md min-h-screen antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container relative">
