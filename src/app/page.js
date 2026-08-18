@@ -484,16 +484,16 @@ export default function ClientPage() {
         {/* Action Section */}
         <section className="w-full pt-8 pb-4 animate-fade-in-up flex flex-col items-center">
           {currentUser ? (
-            <div className="flex flex-col items-center gap-3 w-full">
+            <div className="flex flex-col items-center gap-4 w-full">
               <button 
-                className="w-full max-w-xs py-3.5 px-6 rounded-full bg-rose-200 text-rose-950 font-medium shadow-md hover:bg-rose-300 transition text-center cursor-pointer"
+                className="w-72 py-3.5 px-6 rounded-full bg-rose-200 text-rose-950 font-medium shadow-md hover:bg-rose-300 transition text-center whitespace-nowrap cursor-pointer"
                 type="button"
                 onClick={() => setCurrentView(currentUser.currentSpaceId ? "home" : "onboarding")}
               >
                 Enter Sanctuary
               </button>
               <button 
-                className="w-full max-w-xs py-2.5 text-center text-rose-100/80 hover:text-white transition cursor-pointer font-medium text-sm"
+                className="w-72 py-2.5 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30 text-rose-100 text-center transition cursor-pointer font-medium text-sm whitespace-nowrap"
                 type="button"
                 onClick={handleLogout}
               >
@@ -501,16 +501,16 @@ export default function ClientPage() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-3 w-full">
+            <div className="flex flex-col items-center gap-4 w-full">
               <button 
-                className="w-full max-w-xs py-3.5 px-6 rounded-full bg-rose-200 text-rose-950 font-medium shadow-md hover:bg-rose-300 transition text-center cursor-pointer"
+                className="w-72 py-3.5 px-6 rounded-full bg-rose-200 text-rose-950 font-medium shadow-md hover:bg-rose-300 transition text-center whitespace-nowrap cursor-pointer"
                 type="button"
                 onClick={() => setAuthModal("signup")}
               >
                 Get Started
               </button>
               <button 
-                className="w-full max-w-xs py-2.5 text-center text-rose-100/80 hover:text-white transition cursor-pointer font-medium text-sm"
+                className="w-72 py-2.5 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30 text-rose-100 text-center transition cursor-pointer font-medium text-sm whitespace-nowrap"
                 type="button"
                 onClick={() => setAuthModal("signin")}
               >
@@ -518,8 +518,8 @@ export default function ClientPage() {
               </button>
             </div>
           )}
-          <div className="mt-6 w-full flex justify-center px-6">
-            <p className="max-w-xs text-center text-xs text-rose-200/60 leading-relaxed whitespace-normal">
+          <div className="mt-6 w-full flex justify-center">
+            <p className="w-72 text-center text-xs text-rose-200/60 leading-relaxed whitespace-normal">
               Secured with end-to-end encryption.
             </p>
           </div>
