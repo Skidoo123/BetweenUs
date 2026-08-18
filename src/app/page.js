@@ -17,6 +17,8 @@ export default function ClientPage() {
     setCurrentView(view);
     setMobileSidebarOpen(false);
   };
+
+
   
   // Modals state
   const [authModal, setAuthModal] = useState(null); // 'signup' | 'signin' | null
@@ -30,6 +32,11 @@ export default function ClientPage() {
 
   const [onboardCode, setOnboardCode] = useState("");
   const [onboardMode, setOnboardMode] = useState("couple");
+  const [onboardError, setOnboardError] = useState(null);
+  const [onboardLoading, setOnboardLoading] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState(null);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [generatedSpace, setGeneratedSpace] = useState(null);
 
   // Profile Edit
   const [profileName, setProfileName] = useState("");
@@ -74,7 +81,7 @@ export default function ClientPage() {
     }
   }, [currentView]);
 
-  const loadState = () => {
+  function loadState() {
     const activeUserId = localStorage.getItem(DB.KEYS.ACTIVE_USER);
     const users = DB.get(DB.KEYS.USERS);
     const spaces = DB.get(DB.KEYS.SPACES);
@@ -106,14 +113,57 @@ export default function ClientPage() {
     } else {
       clearUserState();
     }
-  };
+  }
 
-  const clearUserState = () => {
+  function clearUserState() {
     setCurrentUser(null);
     setCurrentSpace(null);
     setPartnerUser(null);
     setCurrentView("landing");
-  };
+  }
+
+  useEffect(() => {
+    if (!generatedSpace) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/spaces/status?spaceId=${generatedSpace.id}`);
+        const data = await res.json();
+        
+        if (data && data.status === "active" && data.partnerId) {
+          clearInterval(interval);
+          
+          // Sync backend space down to client-side localStorage
+          const localSpaces = DB.get(DB.KEYS.SPACES);
+          const index = localSpaces.findIndex(s => s.id === data.space.id);
+          if (index > -1) {
+            localSpaces[index] = data.space;
+          } else {
+            localSpaces.push(data.space);
+          }
+          DB.set(DB.KEYS.SPACES, localSpaces);
+
+          // Update current user currentSpaceId
+          const localUsers = DB.get(DB.KEYS.USERS);
+          const user = localUsers.find(u => u.id === currentUser.id);
+          if (user) {
+            user.currentSpaceId = data.space.id;
+            DB.set(DB.KEYS.USERS, localUsers);
+          }
+
+          // Trigger loading state updates
+          loadState();
+          // Reset states
+          setGeneratedCode(null);
+          setGeneratedSpace(null);
+        }
+      } catch (e) {
+        console.error("Status polling failed:", e);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [generatedSpace, currentUser]);
 
   // AUTH ACTIONS
   const handleAuthSubmit = () => {
@@ -146,20 +196,113 @@ export default function ClientPage() {
   };
 
   // ONBOARDING ACTIONS
-  const handleCreateSpace = () => {
+  const handleCreateSpace = async () => {
     if (!currentUser) return;
-    DB.createSpace(currentUser.id, onboardMode);
-    loadState();
-  };
-
-  const handleJoinSpace = () => {
-    if (!currentUser || !onboardCode.trim()) return alert("Enter code");
+    setOnboardLoading(true);
+    setOnboardError(null);
     try {
-      DB.joinSpace(currentUser.id, onboardCode.trim());
+      const res = await fetch("/api/spaces/create-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          relationshipMode: onboardMode,
+          creatorId: currentUser.id
+        })
+      });
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Sync space object to local storage client DB so client has it registered
+      const localSpaces = DB.get(DB.KEYS.SPACES);
+      localSpaces.push(data.space);
+      DB.set(DB.KEYS.SPACES, localSpaces);
+
+      // Link current user
+      const localUsers = DB.get(DB.KEYS.USERS);
+      const user = localUsers.find(u => u.id === currentUser.id);
+      if (user) {
+        user.currentSpaceId = data.space.id;
+        DB.set(DB.KEYS.USERS, localUsers);
+      }
+
+      setGeneratedCode(data.space.code);
+      setGeneratedSpace(data.space);
       loadState();
     } catch (e) {
-      alert(e.message);
+      setOnboardError(e.message);
+    } finally {
+      setOnboardLoading(false);
     }
+  };
+
+  const handleJoinSpace = async () => {
+    if (!currentUser || !onboardCode.trim()) {
+      setOnboardError("Please enter an invite code.");
+      return;
+    }
+    setOnboardLoading(true);
+    setOnboardError(null);
+    try {
+      const res = await fetch("/api/spaces/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: onboardCode.trim(),
+          joinerId: currentUser.id
+        })
+      });
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Sync space object to local storage client DB
+      const localSpaces = DB.get(DB.KEYS.SPACES);
+      const index = localSpaces.findIndex(s => s.id === data.space.id);
+      if (index > -1) {
+        localSpaces[index] = data.space;
+      } else {
+        localSpaces.push(data.space);
+      }
+      DB.set(DB.KEYS.SPACES, localSpaces);
+
+      // Link current user
+      const localUsers = DB.get(DB.KEYS.USERS);
+      const user = localUsers.find(u => u.id === currentUser.id);
+      if (user) {
+        user.currentSpaceId = data.space.id;
+        DB.set(DB.KEYS.USERS, localUsers);
+      }
+
+      loadState();
+    } catch (e) {
+      setOnboardError(e.message);
+    } finally {
+      setOnboardLoading(false);
+    }
+  };
+
+  const handleCodeChange = (e) => {
+    let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (value.startsWith("BU")) {
+      value = value.slice(2);
+    }
+    if (value.length > 6) value = value.slice(0, 6);
+    
+    let formatted = "BU";
+    if (value.length > 0) formatted += `-${value.slice(0, 4)}`;
+    if (value.length > 4) formatted += `-${value.slice(4, 6)}`;
+    
+    setOnboardCode(value.length === 0 ? "" : formatted);
+  };
+
+  const handleCopyCode = () => {
+    if (!generatedCode) return;
+    navigator.clipboard.writeText(generatedCode);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
   };
 
   // MOOD CHECK-IN
@@ -641,13 +784,25 @@ export default function ClientPage() {
                   <p className="text-on-surface-variant">Create a private space or join your partner's existing space.</p>
                 </div>
 
+                {onboardError && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-xs text-red-300 text-center font-semibold">
+                    ⚠️ {onboardError}
+                  </div>
+                )}
+
                 <div className="space-y-6">
                   {/* Join Space */}
                   <div className="p-6 bg-white/20 rounded-2xl border border-white/30 space-y-4">
                     <h3 className="text-lg font-bold">Have an Invite Code?</h3>
                     <div className="space-y-3">
-                      <input type="text" className="input-field w-full uppercase font-mono text-center tracking-widest font-bold" placeholder="BU-XXXX-XX" value={onboardCode} onChange={(e) => setOnboardCode(e.target.value)} />
-                      <button className="btn btn-primary w-full py-3.5" onClick={handleJoinSpace}>Connect</button>
+                      <input type="text" className="input-field w-full uppercase font-mono text-center tracking-widest font-bold" placeholder="BU-XXXX-XX" value={onboardCode} onChange={handleCodeChange} />
+                      <button className="btn btn-primary w-full py-3.5 flex justify-center items-center gap-2" onClick={handleJoinSpace} disabled={onboardLoading}>
+                        {onboardLoading ? (
+                          <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        ) : (
+                          "Connect"
+                        )}
+                      </button>
                     </div>
                   </div>
 
@@ -656,20 +811,43 @@ export default function ClientPage() {
                   {/* Create Space */}
                   <div className="p-6 bg-white/20 rounded-2xl border border-white/30 space-y-4">
                     <h3 className="text-lg font-bold">Create a New Space</h3>
-                    <div className="space-y-3">
-                      <div className="input-group">
-                        <label className="input-label">Relationship Mode</label>
-                        <select className="select-field" value={onboardMode} onChange={(e) => setOnboardMode(e.target.value)}>
-                          <option value="couple">💕 Couples Mode</option>
-                          <option value="marriage">💍 Marriage Mode</option>
-                          <option value="long_distance">🌍 Long Distance</option>
-                          <option value="friends">🫂 Friends Mode</option>
-                          <option value="family">🏡 Family Mode</option>
-                          <option value="custom">✨ Custom Space</option>
-                        </select>
+                    {generatedCode ? (
+                      <div className="space-y-4 text-center">
+                        <p className="text-sm text-on-surface-variant">Share this code with your partner to pair your space:</p>
+                        <div className="py-4 px-6 bg-white/10 rounded-xl border border-white/20 font-mono text-3xl font-bold tracking-widest text-primary text-center select-all">
+                          {generatedCode}
+                        </div>
+                        <button className="btn btn-primary w-full py-3.5 flex justify-center items-center gap-2" onClick={handleCopyCode}>
+                          <span className="material-symbols-outlined text-[20px]">content_copy</span>
+                          {copySuccess ? "Copied! ✨" : "Copy Invite Code"}
+                        </button>
+                        <div className="flex items-center justify-center gap-2 text-xs text-on-surface-variant mt-2">
+                          <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
+                          <span>Waiting for your partner to join...</span>
+                        </div>
                       </div>
-                      <button className="btn btn-primary w-full py-4" onClick={handleCreateSpace}>Generate Invite Code</button>
-                    </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="input-group">
+                          <label className="input-label">Relationship Mode</label>
+                          <select className="select-field" value={onboardMode} onChange={(e) => setOnboardMode(e.target.value)}>
+                            <option value="couple">💕 Couples Mode</option>
+                            <option value="marriage">💍 Marriage Mode</option>
+                            <option value="long_distance">🌍 Long Distance</option>
+                            <option value="friends">🫂 Friends Mode</option>
+                            <option value="family">🏡 Family Mode</option>
+                            <option value="custom">✨ Custom Space</option>
+                          </select>
+                        </div>
+                        <button className="btn btn-primary w-full py-4 flex justify-center items-center gap-2" onClick={handleCreateSpace} disabled={onboardLoading}>
+                          {onboardLoading ? (
+                            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                          ) : (
+                            "Generate Invite Code"
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
