@@ -484,7 +484,7 @@ export default function ClientPage() {
           </section>
 
           {/* Action Section */}
-          <section className="w-full pt-4 pb-2 animate-fade-in-up flex flex-col items-center">
+          <section className="w-full pt-4 pb-2 animate-fade-in-up flex flex-col items-center relative z-20">
             {currentUser ? (
               <div className="flex flex-col items-center gap-4 w-full">
                 <button 
