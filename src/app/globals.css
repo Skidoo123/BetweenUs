@@ -1400,3 +1400,20 @@ body {
   background: radial-gradient(circle at top right, rgba(241, 180, 219, 0.15) 0%, transparent 40%),
               radial-gradient(circle at bottom left, rgba(69, 27, 58, 0.05) 0%, transparent 50%);
 }
+
+/* Landing Page Animations */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-down {
+  animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-fade-in-up {
+  opacity: 0;
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
