@@ -925,9 +925,9 @@ export default function ClientPage() {
 
       {/* Floating Memory Bubbles (Decorative) */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="floating-bubble absolute top-[15%] left-[25%] w-[300px] h-[300px] rounded-full bg-white/10 backdrop-blur-md border border-white/20"></div>
-        <div className="floating-bubble absolute bottom-[20%] left-[10%] w-[200px] h-[200px] rounded-full bg-white/10 backdrop-blur-lg border border-white/20"></div>
-        <div className="floating-bubble absolute top-[40%] right-[35%] w-[150px] h-[150px] rounded-full bg-white/10 backdrop-blur-sm border border-white/20"></div>
+        <div className="floating-bubble absolute top-[15%] left-[25%] w-[300px] h-[300px] rounded-full bg-white/10 backdrop-blur-md border border-white/20 pointer-events-none"></div>
+        <div className="floating-bubble absolute bottom-[20%] left-[10%] w-[200px] h-[200px] rounded-full bg-white/10 backdrop-blur-lg border border-white/20 pointer-events-none"></div>
+        <div className="floating-bubble absolute top-[40%] right-[35%] w-[150px] h-[150px] rounded-full bg-white/10 backdrop-blur-sm border border-white/20 pointer-events-none"></div>
       </div>
 
       {/* Mobile Header Bar */}
@@ -1345,6 +1345,26 @@ export default function ClientPage() {
                         <h4 className="text-base font-bold text-white mb-1">Connection Rituals</h4>
                         <p className="text-xs text-stone-400 leading-relaxed">Answer daily reflection prompts and complete challenges.</p>
                       </button>
+
+                      {/* Grid Item 5: Private Diary */}
+                      <button 
+                        onClick={() => setCurrentView("diary")}
+                        className="glass-card flex flex-col items-start text-left p-6 rounded-3xl border border-white/10 bg-stone-850/20 hover:bg-stone-800/20 transition-all cursor-pointer group"
+                      >
+                        <span className="material-symbols-outlined text-orange-400 text-3xl mb-4 group-hover:scale-110 transition-transform">book</span>
+                        <h4 className="text-base font-bold text-white mb-1">Private Diary</h4>
+                        <p className="text-xs text-stone-400 leading-relaxed">Notice things about your partner — moments, story hints, reminders.</p>
+                      </button>
+
+                      {/* Grid Item 6: Couples Game Scoreboard */}
+                      <button 
+                        onClick={() => setCurrentView("scoreboard")}
+                        className="glass-card flex flex-col items-start text-left p-6 rounded-3xl border border-white/10 bg-stone-850/20 hover:bg-stone-800/20 transition-all cursor-pointer group"
+                      >
+                        <span className="material-symbols-outlined text-orange-400 text-3xl mb-4 group-hover:scale-110 transition-transform">leaderboard</span>
+                        <h4 className="text-base font-bold text-white mb-1">Game Scoreboard</h4>
+                        <p className="text-xs text-stone-400 leading-relaxed">Keep track of wins and draws for your favorite couples games.</p>
+                      </button>
                     </div>
                   </div>
 
@@ -1588,10 +1608,10 @@ export default function ClientPage() {
                 if (filtered.length === 0) {
                   return (
                     /* Empty State View */
-                    <div className="flex flex-col items-center justify-center text-center py-12 px-6 bg-stone-900/15 border border-dashed border-white/10 rounded-[28px] mt-2 select-none">
+                    <div className="flex flex-col items-center justify-center text-center py-12 px-6 bg-stone-900/15 border border-dashed border-white/10 rounded-[28px] mt-2 select-none flex-shrink-0 w-full">
                       <span className="material-symbols-outlined text-stone-500 text-4xl mb-4">book</span>
                       <h4 className="text-lg font-bold text-white mb-2">Nothing here yet</h4>
-                      <p className="text-xs text-stone-400 leading-relaxed mb-6 max-w-sm">
+                      <p className="w-full max-w-[280px] mx-auto text-center flex-shrink-0 text-xs text-stone-400 leading-relaxed mb-6">
                         This is your private space to notice things about {partnerUser ? partnerUser.name : "your partner"} — moments, stories, hints they drop, things you love.
                       </p>
                       <button 
@@ -2375,7 +2395,7 @@ export default function ClientPage() {
             
             {/* Sanctuary (Home) */}
             <button 
-              className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "home" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${(currentView === "home" || currentView === "diary" || currentView === "scoreboard") ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
               onClick={() => setCurrentView("home")}
             >
               <span className="material-symbols-outlined mb-1">home</span>
@@ -2407,24 +2427,6 @@ export default function ClientPage() {
             >
               <span className="material-symbols-outlined mb-1">auto_stories</span>
               <span className="font-label-sm text-[10px] font-bold">Timeline</span>
-            </button>
-
-            {/* Diary */}
-            <button 
-              className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "diary" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
-              onClick={() => setCurrentView("diary")}
-            >
-              <span className="material-symbols-outlined mb-1">book</span>
-              <span className="font-label-sm text-[10px] font-bold">Diary</span>
-            </button>
-
-            {/* Scoreboard */}
-            <button 
-              className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "scoreboard" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
-              onClick={() => setCurrentView("scoreboard")}
-            >
-              <span className="material-symbols-outlined mb-1">leaderboard</span>
-              <span className="font-label-sm text-[10px] font-bold">Scoreboard</span>
             </button>
 
             {/* Profile (Settings) */}
