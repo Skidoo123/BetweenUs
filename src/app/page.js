@@ -2522,31 +2522,30 @@ export default function ClientPage() {
           {/* VIEW: SETTINGS & PROFILE REDESIGN */}
           {currentView === "profile" && currentUser && (
             <section className="view-container active-view w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-6 select-none">
-              {/* Top Bar with Settings Gear on Right */}
-              <div className="flex items-center justify-end w-full">
+              {/* Top Header Row with Settings */}
+              <div className="flex justify-end w-full">
                 <button 
                   onClick={() => setCurrentView("settings")}
-                  className="w-9 h-9 rounded-full bg-[#1F1C1A] border border-[#2A2623] flex items-center justify-center text-stone-300 hover:text-white transition-all cursor-pointer active:scale-95 shadow-sm"
+                  className="p-2.5 rounded-xl bg-[#1F1C1A] border border-[#2A2623] hover:bg-[#2A2623] text-stone-300 transition-colors cursor-pointer"
                   title="Settings"
                 >
                   <span className="material-symbols-outlined text-[20px]">settings</span>
                 </button>
               </div>
 
-              {/* User Info Row */}
-              <div className="w-full flex items-center gap-4">
-                {/* Left: Avatar with camera badge */}
+              {/* User Header */}
+              <div className="flex items-center gap-4 w-full">
                 <div className="relative cursor-pointer select-none group" onClick={() => profileImageInputRef.current?.click()}>
                   {profileImagePreview ? (
-                    <img src={profileImagePreview} alt="Preview" className="w-14 h-14 rounded-full object-cover border border-[#2A2623]" />
+                    <img src={profileImagePreview} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-[#5A3826]" />
                   ) : (
-                    <div className="w-14 h-14 rounded-full bg-[#3D261A] border border-[#2A2623] flex items-center justify-center font-bold text-[#E58B58] text-xl shadow-inner select-none">
+                    <div className="w-16 h-16 rounded-full bg-[#3D261A] border-2 border-[#5A3826] flex items-center justify-center text-2xl font-bold text-[#E58B58]">
                       {currentUser.name[0].toUpperCase()}
                     </div>
                   )}
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#E58B58] border border-[#161413] flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-[10px] font-bold">photo_camera</span>
-                  </div>
+                  <button className="absolute -bottom-1 -right-1 bg-[#1F1C1A] border border-[#2A2623] p-1.5 rounded-full text-stone-300 hover:text-white shadow cursor-pointer">
+                    <span className="material-symbols-outlined text-xs">photo_camera</span>
+                  </button>
                   <input 
                     type="file" 
                     ref={profileImageInputRef} 
@@ -2555,28 +2554,25 @@ export default function ClientPage() {
                     onChange={handleProfileImageChange} 
                   />
                 </div>
-                {/* User Details */}
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-cursive text-3xl text-amber-100 font-bold leading-none truncate">{currentUser.name}</h3>
-                  <p className="text-xs text-[#8E8780] font-medium mt-1 truncate">{currentUser.email}</p>
+                <div>
+                  <h2 className="text-2xl font-bold font-serif italic text-white">{currentUser.name}</h2>
+                  <p className="text-xs text-stone-400">{currentUser.email}</p>
                 </div>
               </div>
 
-              {/* PARTNER Section Label */}
-              <div className="text-xs font-bold tracking-wider text-[#8E8780] uppercase w-full text-left flex items-center gap-2">
-                <span>Partner</span>
+              {/* Partner Section Header */}
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-xs font-bold tracking-wider text-stone-400 uppercase">Partner</span>
                 <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
               </div>
 
-              {/* Pairing & Invite Section */}
+              {/* Pairing Card */}
               {!currentSpace || !partnerUser ? (
                 /* Unpaired Invite Card */
                 <div className="w-full bg-[#1F1C1A] border border-[#2A2623] rounded-3xl p-6 flex flex-col items-center gap-5 text-center shadow-lg">
-                  <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
-                    Your invite code — share with your partner
-                  </p>
+                  <p className="text-xs text-stone-400">Your invite code — share with your partner</p>
 
-                  {/* Envelope Illustration Component */}
+                  {/* Vintage Envelope Card */}
                   <div 
                     onClick={() => {
                       if (currentSpace?.code) {
@@ -2587,60 +2583,78 @@ export default function ClientPage() {
                             url: `${window.location.origin}/?code=${currentSpace.code}`
                           }).catch(() => {
                             navigator.clipboard.writeText(currentSpace.code);
-                            alert(`Invite code "${currentSpace.code}" copied to clipboard! Share it with your partner.`);
+                            setCopySuccess(true);
+                            setTimeout(() => setCopySuccess(false), 2000);
                           });
                         } else {
                           navigator.clipboard.writeText(currentSpace.code);
-                          alert(`Invite code "${currentSpace.code}" copied to clipboard! Share it with your partner.`);
+                          setCopySuccess(true);
+                          setTimeout(() => setCopySuccess(false), 2000);
                         }
                       }
                     }}
-                    className="bg-[#E8DCC4] text-[#1E1C1A] rounded-xl p-6 shadow-md w-full max-w-[280px] mx-auto flex flex-col items-center justify-center relative cursor-pointer hover:scale-[1.02] active:scale-98 transition-transform select-none"
+                    className="cursor-pointer group relative w-full max-w-[260px] bg-[#E8DCC4] text-[#1E1C1A] rounded-2xl p-5 shadow-md flex flex-col items-center justify-center transition-transform hover:scale-[1.02] select-none"
                   >
-                    {/* Red Wax Seal Emblem */}
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-[#962D2D] border border-white/20 flex items-center justify-center shadow-md">
-                      <span className="material-symbols-outlined text-white text-xs">favorite</span>
+                    <div className="w-9 h-9 rounded-full bg-[#8B3E2F] border-2 border-[#6D2F23] flex items-center justify-center text-white text-xs mb-3 shadow-inner">
+                      💌
                     </div>
-                    <span className="font-cursive text-xl text-stone-800/80 font-bold mt-2">to your person</span>
+                    <p className="font-serif italic text-base text-[#2E2822]">to your person</p>
                   </div>
 
-                  {/* Invite Code */}
-                  <div className="flex flex-col items-center">
-                    <span className="font-mono text-xl tracking-[0.25em] font-extrabold text-[#E58B58] uppercase select-all">
+                  {/* Invite Code Text */}
+                  <div className="flex flex-col items-center gap-1">
+                    <p className="text-xl font-mono font-bold tracking-[0.25em] text-[#E58B58]">
                       {currentSpace ? currentSpace.code.toUpperCase() : "N O   C O D E"}
-                    </span>
-                    <span className="text-[10px] text-[#8E8780] uppercase tracking-wider font-bold mt-2 select-none">
-                      tap envelope to share
-                    </span>
+                    </p>
+                    <button 
+                      onClick={() => {
+                        if (currentSpace?.code) {
+                          navigator.clipboard.writeText(currentSpace.code);
+                          setCopySuccess(true);
+                          setTimeout(() => setCopySuccess(false), 2000);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-200 mt-1 transition-colors bg-transparent border-0 cursor-pointer"
+                    >
+                      {copySuccess ? (
+                        <>
+                          <span className="material-symbols-outlined text-emerald-400 text-xs font-bold">check</span>
+                          <span>Code copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-xs">content_copy</span>
+                          <span>tap envelope to share</span>
+                        </>
+                      )}
+                    </button>
                   </div>
 
                   {/* Divider */}
-                  <div className="relative flex py-1 items-center w-full">
-                    <div className="flex-grow border-t border-[#2A2623]"></div>
-                    <span className="flex-shrink mx-4 text-[10px] font-bold text-stone-600 uppercase tracking-widest">or</span>
-                    <div className="flex-grow border-t border-[#2A2623]"></div>
+                  <div className="relative w-full my-1">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-[#2A2623]"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-[#1F1C1A] px-3 text-stone-500 font-semibold">or</span>
+                    </div>
                   </div>
 
-                  {/* Partner Code Entry Form */}
-                  <div className="space-y-2 w-full flex flex-col items-stretch">
-                    <label className="text-xs text-stone-400 font-semibold self-start text-left">
-                      Enter your partner's code
-                    </label>
-                    <div className="flex gap-3 w-full">
+                  {/* Enter Code Form */}
+                  <div className="w-full flex flex-col gap-2 text-left">
+                    <label className="text-xs text-stone-400 font-semibold font-sans">Enter your partner's code</label>
+                    <div className="flex gap-2">
                       <input 
-                        type="text" 
-                        maxLength="11"
-                        className="input-field bg-[#161413] border border-[#2A2623] text-white rounded-xl py-3 px-4 font-mono uppercase tracking-[0.25em] text-center text-sm w-full outline-none focus:border-[#E58B58]/40 transition-colors" 
+                        type="text"
                         placeholder="X X X X X X X X"
                         value={connectPartnerCode}
                         onChange={(e) => setConnectPartnerCode(e.target.value.toUpperCase())}
+                        className="flex-1 bg-[#161413] border border-[#2A2623] rounded-xl px-4 py-2.5 text-sm font-mono tracking-widest text-center text-white placeholder:text-stone-600 focus:outline-none focus:border-[#E58B58]"
                       />
                       <button 
-                        onClick={() => {
-                          if (!connectPartnerCode.trim()) return alert("Please enter a pairing code.");
-                          handleJoinSpaceCode(connectPartnerCode);
-                        }}
-                        className="px-5 py-3 bg-[#E58B58] hover:bg-[#c6764b] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer whitespace-nowrap"
+                        disabled={!connectPartnerCode.trim()}
+                        onClick={() => handleJoinSpaceCode(connectPartnerCode)}
+                        className="px-5 py-2.5 bg-[#E58B58] hover:bg-[#c6764b] disabled:bg-[#2A2623] disabled:text-stone-600 text-white font-medium text-xs rounded-xl transition-colors whitespace-nowrap cursor-pointer"
                       >
                         Connect
                       </button>
@@ -2662,7 +2676,7 @@ export default function ClientPage() {
                   <h4 className="text-base font-bold text-white">Paired Space Connected</h4>
                   
                   <p className="text-sm text-stone-300/80 leading-relaxed max-w-sm mx-auto text-center">
-                    You are connected with <span className="font-cursive text-amber-200 text-base leading-none">{partnerUser.name}</span>. Everything you plan, draw, and track will sync.
+                    You are connected with <span className="font-serif italic text-amber-200 text-base leading-none">{partnerUser.name}</span>. Everything you plan, draw, and track will sync.
                   </p>
                   
                   <button 
@@ -2678,187 +2692,177 @@ export default function ClientPage() {
 
           {/* VIEW: SETTINGS SCREEN */}
           {currentView === "settings" && currentUser && (
-            <section className="view-container active-view w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-5 select-none">
-              
-              {/* Settings Top Nav Bar */}
-              <div className="flex items-center justify-between mb-2">
+            <section className="view-container active-view w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-6 select-none text-stone-100">
+              {/* Settings Header */}
+              <div className="flex items-center justify-between pb-2">
                 <button 
                   onClick={() => {
                     setEditDisplayNameOpen(false);
                     setCurrentView("profile");
                   }}
-                  className="w-9 h-9 rounded-full bg-[#1F1C1A] border border-[#2A2623] flex items-center justify-center text-stone-300 hover:text-white transition-all cursor-pointer active:scale-95"
+                  className="p-2 rounded-full bg-[#24211E] hover:bg-[#2F2B27] text-stone-300 transition-colors cursor-pointer border-none"
                 >
-                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                  <span className="material-symbols-outlined text-[20px] block">arrow_back</span>
                 </button>
-                <h2 className="font-cursive text-3xl text-amber-100 font-bold">Settings</h2>
-                <div className="w-9"></div> {/* Balanced spacer */}
+                <h1 className="text-xl font-bold tracking-tight font-serif italic text-white">Settings</h1>
+                <div className="w-9"></div>
               </div>
 
-              {/* Group 1: Subscription */}
-              <div className="flex items-center gap-2 self-start text-xs font-semibold tracking-wider text-[#8E8780] uppercase w-full">
-                <span>Subscription</span>
-                <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
-              </div>
-              <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden divide-y divide-[#2A2623] w-full shadow-md">
-                <div 
-                  onClick={() => alert("Thank you for supporting BetweenUs! Upgrade to Pro features is coming soon.")}
-                  className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white">BetweenUs Pro</span>
-                    <span className="text-xs text-[#8E8780]">Upgrade to unlock the full space</span>
-                  </div>
-                  <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
+              {/* Section: Subscription */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold tracking-wider text-stone-400 uppercase font-sans">Subscription</span>
+                  <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
                 </div>
-                <div 
-                  onClick={() => alert("Purchases successfully restored.")}
-                  className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white">Restore purchases</span>
-                    <span className="text-xs text-[#8E8780]">Already subscribed? Tap to restore</span>
-                  </div>
-                  <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
-                </div>
-              </div>
-
-              {/* Group 2: Account */}
-              <div className="flex items-center gap-2 self-start text-xs font-semibold tracking-wider text-[#8E8780] uppercase w-full">
-                <span>Account</span>
-                <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
-              </div>
-              <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden divide-y divide-[#2A2623] w-full shadow-md">
-                
-                {/* Display Name Tile (Inline Editor) */}
-                <div className="p-4 flex flex-col justify-center cursor-default">
-                  {editDisplayNameOpen ? (
-                    <div className="flex items-center gap-2 w-full py-1">
-                      <input 
-                        type="text" 
-                        className="input-field w-full py-2 px-3 text-xs bg-stone-900 border-white/10 rounded-lg text-white" 
-                        value={profileName} 
-                        onChange={(e) => setProfileName(e.target.value)} 
-                        autoFocus
-                      />
-                      <button 
-                        onClick={() => {
-                          if (!profileName.trim()) return alert("Name cannot be empty.");
-                          handleProfileSave();
-                          setEditDisplayNameOpen(false);
-                        }}
-                        className="px-4 py-2 bg-[#E58B58] hover:bg-[#c6764b] text-white text-[11px] rounded-lg font-bold transition-colors cursor-pointer"
-                      >
-                        Save
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setProfileName(currentUser.name);
-                          setEditDisplayNameOpen(false);
-                        }}
-                        className="px-3 py-2 bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white text-[11px] rounded-lg font-bold transition-colors cursor-pointer"
-                      >
-                        Cancel
-                      </button>
+                <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden divide-y divide-[#2A2623] w-full">
+                  <button 
+                    onClick={() => alert("Thank you for supporting BetweenUs! Upgrade to Pro features is coming soon.")}
+                    className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] text-left transition-colors border-0 bg-transparent text-stone-100 cursor-pointer"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-white">BetweenUs Pro</p>
+                      <p className="text-xs text-stone-400 mt-0.5">Upgrade to unlock the full space</p>
                     </div>
-                  ) : (
-                    <div 
-                      onClick={() => setEditDisplayNameOpen(true)}
-                      className="flex items-center justify-between w-full cursor-pointer"
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-white">Display name</span>
-                        <span className="text-xs text-[#8E8780]">{currentUser.name}</span>
+                    <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
+                  </button>
+                  <button 
+                    onClick={() => alert("Purchases successfully restored.")}
+                    className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] text-left transition-colors border-0 bg-transparent text-stone-100 cursor-pointer"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-white">Restore purchases</p>
+                      <p className="text-xs text-stone-400 mt-0.5">Already subscribed? Tap to restore</p>
+                    </div>
+                    <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Section: Account */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold tracking-wider text-stone-400 uppercase font-sans">Account</span>
+                  <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
+                </div>
+                <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden divide-y divide-[#2A2623] w-full">
+                  <button 
+                    onClick={() => alert("Notification settings configured. You will receive updates about date countdowns and daily challenges.")}
+                    className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] text-left transition-colors border-0 bg-transparent text-stone-100 cursor-pointer"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-white">Notifications</p>
+                      <p className="text-xs text-stone-400 mt-0.5">Choose what you hear about</p>
+                    </div>
+                    <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
+                  </button>
+                  <button 
+                    onClick={() => alert("To add widgets, go to your iOS / Android home screen, long press, search for BetweenUs, and select either the Date Countdown or Drawing Canvas widgets.")}
+                    className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] text-left transition-colors border-0 bg-transparent text-stone-100 cursor-pointer"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-white">Widgets</p>
+                      <p className="text-xs text-stone-400 mt-0.5">Set up Countdown and Canvas</p>
+                    </div>
+                    <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
+                  </button>
+                  <div className="w-full p-4 flex items-center justify-between">
+                    {editDisplayNameOpen ? (
+                      <div className="flex items-center gap-2 w-full py-1">
+                        <input 
+                          type="text" 
+                          className="input-field w-full py-2 px-3 text-xs bg-stone-900 border-white/10 rounded-lg text-white" 
+                          value={profileName} 
+                          onChange={(e) => setProfileName(e.target.value)} 
+                          autoFocus
+                        />
+                        <button 
+                          onClick={() => {
+                            if (!profileName.trim()) return alert("Name cannot be empty.");
+                            handleProfileSave();
+                            setEditDisplayNameOpen(false);
+                          }}
+                          className="px-4 py-2 bg-[#E58B58] hover:bg-[#c6764b] text-white text-[11px] rounded-lg font-bold transition-colors cursor-pointer"
+                        >
+                          Save
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setProfileName(currentUser.name);
+                            setEditDisplayNameOpen(false);
+                          }}
+                          className="px-3 py-2 bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white text-[11px] rounded-lg font-bold transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
                       </div>
-                      <span className="material-symbols-outlined text-stone-500 hover:text-white text-lg transition-colors">edit</span>
+                    ) : (
+                      <div 
+                        onClick={() => setEditDisplayNameOpen(true)}
+                        className="flex items-center justify-between w-full cursor-pointer"
+                      >
+                        <div>
+                          <p className="text-xs text-stone-400">Display name</p>
+                          <p className="text-sm font-semibold text-white mt-0.5">{currentUser.name}</p>
+                        </div>
+                        <button className="p-1.5 rounded-lg hover:bg-white/5 text-stone-400 hover:text-white bg-transparent border-0 cursor-pointer">
+                          <span className="material-symbols-outlined text-base">edit</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full p-4 text-left text-sm font-semibold text-[#E58B58] hover:bg-white/[0.02] transition-colors border-0 bg-transparent cursor-pointer"
+                  >
+                    Sign out
+                  </button>
+                  <button 
+                    onClick={handleDeleteAccount}
+                    className="w-full p-4 text-left text-sm font-semibold text-red-400 hover:bg-white/[0.02] transition-colors border-0 bg-transparent cursor-pointer"
+                  >
+                    Delete account
+                  </button>
+                </div>
+              </div>
+
+              {/* Section: Feedback & Legal */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold tracking-wider text-stone-400 uppercase font-sans">Feedback</span>
+                  <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
+                </div>
+                <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden w-full">
+                  <a 
+                    href="mailto:support@betweenus.app?subject=Feedback"
+                    className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] text-left transition-colors text-stone-100 no-underline cursor-pointer"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-white">Leave feedback</p>
+                      <p className="text-xs text-stone-400 mt-0.5">Tell us what to improve or what you want next</p>
                     </div>
-                  )}
+                    <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
+                  </a>
                 </div>
+              </div>
 
-                <div 
-                  onClick={() => alert("Notification settings configured. You will receive updates about date countdowns and daily challenges.")}
-                  className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white">Notifications</span>
-                    <span className="text-xs text-[#8E8780]">Choose what you hear about</span>
-                  </div>
-                  <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold tracking-wider text-stone-400 uppercase font-sans">Legal</span>
+                  <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
                 </div>
-
-                <div 
-                  onClick={() => alert("To add widgets, go to your iOS / Android home screen, long press, search for BetweenUs, and select either the Date Countdown or Drawing Canvas widgets.")}
-                  className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white">Widgets</span>
-                    <span className="text-xs text-[#8E8780]">Set up Countdown and Canvas</span>
-                  </div>
-                  <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
+                <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden divide-y divide-[#2A2623] w-full">
+                  <a href="#" onClick={(e) => { e.preventDefault(); alert("Terms of Service summary: Play fair, stay connected, keep it between us!"); }} className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors no-underline text-stone-300">
+                    <span className="text-sm font-bold text-white">Terms of Service</span>
+                    <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
+                  </a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); alert("Privacy Policy summary: Your private entries, drawings, and scores are strictly local/private between you and your partner."); }} className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors no-underline text-stone-300">
+                    <span className="text-sm font-bold text-white">Privacy Policy</span>
+                    <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
+                  </a>
                 </div>
-
-                {/* Sign Out (Terracotta) */}
-                <div 
-                  onClick={handleLogout}
-                  className="p-4 flex items-center justify-between hover:bg-red-500/5 group cursor-pointer transition-colors"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-[#E58B58] group-hover:text-red-400 transition-colors">Sign out</span>
-                  </div>
-                  <span className="material-symbols-outlined text-[#E58B58] group-hover:text-red-400 text-base transition-colors">logout</span>
-                </div>
-
-                {/* Delete Account (Terracotta) */}
-                <div 
-                  onClick={handleDeleteAccount}
-                  className="p-4 flex items-center justify-between hover:bg-red-500/5 group cursor-pointer transition-colors"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-red-400 group-hover:text-red-300 transition-colors">Delete account</span>
-                  </div>
-                  <span className="material-symbols-outlined text-red-400 group-hover:text-red-300 text-base transition-colors">delete_forever</span>
-                </div>
-
               </div>
 
-              {/* Group 3: Feedback */}
-              <div className="flex items-center gap-2 self-start text-xs font-semibold tracking-wider text-[#8E8780] uppercase w-full">
-                <span>Feedback</span>
-                <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
-              </div>
-              <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden w-full shadow-md">
-                <a 
-                  href="mailto:support@betweenus.app?subject=Feedback"
-                  className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors no-underline text-stone-300"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white">Leave feedback</span>
-                    <span className="text-xs text-[#8E8780]">Tell us what to improve or what you want next</span>
-                  </div>
-                  <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
-                </a>
-              </div>
-
-              {/* Group 4: Legal */}
-              <div className="flex items-center gap-2 self-start text-xs font-semibold tracking-wider text-[#8E8780] uppercase w-full">
-                <span>Legal</span>
-                <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
-              </div>
-              <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden divide-y divide-[#2A2623] w-full shadow-md">
-                <a href="#" onClick={(e) => { e.preventDefault(); alert("Terms of Service summary: Play fair, stay connected, keep it between us!"); }} className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors no-underline text-stone-300">
-                  <span className="text-sm font-bold text-white">Terms of Service</span>
-                  <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
-                </a>
-                <a href="#" onClick={(e) => { e.preventDefault(); alert("Privacy Policy summary: Your private entries, drawings, and scores are strictly local/private between you and your partner."); }} className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors no-underline text-stone-300">
-                  <span className="text-sm font-bold text-white">Privacy Policy</span>
-                  <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
-                </a>
-              </div>
-
-              {/* Version Footer */}
-              <div className="text-center py-6">
-                <p className="text-[10px] font-bold tracking-wider text-stone-600 uppercase">BetweenUs • v1.0</p>
-              </div>
+              <p className="text-center text-xs text-stone-600 pt-4">BetweenUs · v1.0</p>
             </section>
           )}
         </main>
