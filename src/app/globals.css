@@ -1864,5 +1864,13 @@ body {
   -webkit-backdrop-filter: none !important;
 }
 
+/* Sidebar on desktop */
+@media (min-width: 1025px) {
+  .sidebar {
+    position: static !important;
+    height: 100vh !important;
+  }
+}
+
 
 

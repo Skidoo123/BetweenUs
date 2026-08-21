@@ -47,7 +47,15 @@ export async function GET(req) {
       };
     });
 
-    return NextResponse.json({ gameScores });
+    const recentSessions = sessions.slice(-5).reverse().map(s => ({
+      id: s.id,
+      gameType: s.gameType,
+      winnerId: s.winnerId,
+      isDraw: s.isDraw,
+      createdAt: s.createdAt
+    }));
+
+    return NextResponse.json({ gameScores, recentSessions });
   } catch (error) {
     console.error("Scoreboard GET API Error:", error);
     return NextResponse.json({ error: "Failed to fetch scoreboard stats" }, { status: 500 });

@@ -5,6 +5,8 @@ import { DB } from "@/lib/db";
 import { DEFAULT_DISCOVER } from "@/lib/data";
 
 
+import { LinkFour, WordDuel, Spotted, MemoryMatch } from "@/components/CouplesGames";
+
 export default function ClientPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentSpace, setCurrentSpace] = useState(null);
@@ -119,6 +121,9 @@ export default function ClientPage() {
 
   // Couples Game Scoreboard states
   const [gameScores, setGameScores] = useState([]);
+  const [recentSessions, setRecentSessions] = useState([]);
+  const [scoreboardTab, setScoreboardTab] = useState("play"); // 'play' or 'stats'
+  const [activeGameModal, setActiveGameModal] = useState(null);
 
   // Profile & Settings states
   const [connectPartnerCode, setConnectPartnerCode] = useState("");
@@ -271,9 +276,14 @@ export default function ClientPage() {
       fetch(`/api/scoreboard?spaceId=${currentSpace.id}&userId=${currentUser.id}`)
         .then(res => res.json())
         .then(data => {
-          if (data && data.gameScores) {
-            setGameScores(data.gameScores);
-            localStorage.setItem(DB.KEYS.GAME_SCORES, JSON.stringify(data.gameScores));
+          if (data) {
+            if (data.gameScores) {
+              setGameScores(data.gameScores);
+              localStorage.setItem(DB.KEYS.GAME_SCORES, JSON.stringify(data.gameScores));
+            }
+            if (data.recentSessions) {
+              setRecentSessions(data.recentSessions);
+            }
           }
         })
         .catch(err => console.error("Error polling scoreboard:", err));
@@ -1015,43 +1025,16 @@ export default function ClientPage() {
   // 2. RENDERING CORE WORKSPACE SYSTEM (Home, Chat, Discover, Memories, Daily, etc.)
   return (
     <div className="text-on-surface font-body-md min-h-screen antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container relative">
-      {/* Mobile Header Bar */}
-      {currentUser && currentView !== "onboarding" && currentSpace && (
-        <header className="fixed top-0 left-0 right-0 h-16 z-40 bg-[#181615] border-b border-[#282522] flex items-center justify-between px-6 lg:hidden">
-          <button className="text-orange-400 flex items-center justify-center cursor-pointer bg-transparent border-0 mr-2 animate-pulse" onClick={() => setMobileSidebarOpen(true)}>
-            <span className="material-symbols-outlined text-2xl">menu</span>
-          </button>
-          
-          {/* Streak Counter */}
-          <div className="flex items-center gap-1 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full">
-            <span className="material-symbols-outlined text-amber-500 text-sm fill-current">local_fire_department</span>
-            <span className="text-xs font-bold text-amber-500">{currentSpace.streakDays}d</span>
-          </div>
-
-          {/* Connected Dual Avatars */}
-          <div className="flex items-center gap-1 relative ml-auto">
-            {renderAvatar(currentUser, "w-6 h-6 border border-white/20", "text-[10px]")}
-            <div className="w-4 h-0.5 bg-gradient-to-r from-orange-400 to-rose-400"></div>
-            {partnerUser ? (
-              renderAvatar(partnerUser, "w-6 h-6 border border-white/20", "text-[10px]")
-            ) : (
-              <div className="w-6 h-6 rounded-full bg-stone-700 flex items-center justify-center text-stone-400 text-[10px] border border-white/10 animate-pulse">
-                ?
-              </div>
-            )}
-          </div>
-        </header>
-      )}
-
-      <div id="app-container" className="relative z-10 flex">
+      
+      <div id="app-container" className="relative z-10 flex w-screen h-screen overflow-hidden bg-[#121212] text-white">
         {/* Mobile Sidebar Overlay */}
         {mobileSidebarOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden" onClick={() => setMobileSidebarOpen(false)} />
         )}
 
-        {/* Navigation Sidebar (Desktop) */}
+        {/* Navigation Sidebar (Desktop & Mobile) */}
         {currentUser && currentView !== "onboarding" && currentSpace && (
-          <aside className={`sidebar bg-[#181615] border-r border-[#282522] shadow-sm py-8 px-4 z-50 transition-all duration-300 ${mobileSidebarOpen ? "mobile-open" : ""}`}>
+          <aside className={`sidebar bg-[#161413] border-r border-[#24211E] shadow-sm py-8 px-4 z-50 transition-all duration-300 flex flex-col justify-between flex-shrink-0 w-64 ${mobileSidebarOpen ? "mobile-open" : ""}`}>
             <div className="mb-12 px-4 cursor-pointer" onClick={() => navigateTo("home")}>
               <h1 className="font-headline-sm text-headline-sm text-primary font-bold drop-shadow-sm flex items-center gap-2">
                 <svg className="logo-heart" style={{ width: "24px", height: "24px", fill: "var(--primary)" }} viewBox="0 0 24 24">
@@ -1121,39 +1104,41 @@ export default function ClientPage() {
         )}
 
         {/* Main Content Area */}
-        <main className="main-content flex-1 min-h-screen" style={{ marginLeft: currentUser ? "var(--sidebar-width)" : "0", width: currentUser ? "calc(100% - var(--sidebar-width))" : "100%" }}>
+        <div className="flex-grow flex-shrink flex-1 min-w-0 h-full flex flex-col overflow-y-auto">
           
-          {/* Top Bar Header (Streak & Dual Avatars) */}
-          {currentUser && currentView !== "onboarding" && currentSpace && (
-            <header className="w-full h-16 border-b border-white/10 px-8 hidden lg:flex items-center justify-between bg-stone-900/50 backdrop-blur-md sticky top-0 z-30">
-              <div className="flex items-center gap-4">
-                <h2 className="text-xl font-bold text-white font-cursive capitalize">
+          {/* Top Header Bar */}
+          {currentUser && currentView !== "landing" && currentView !== "onboarding" && currentView !== "scoreboard" && currentSpace && (
+            <header className="sticky top-0 z-20 w-full bg-[#161413] border-b border-[#24211E] px-8 py-4 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-3">
+                {/* Mobile Hamburger Button */}
+                <button className="text-orange-400 flex lg:hidden items-center justify-center cursor-pointer bg-transparent border-0 mr-1" onClick={() => setMobileSidebarOpen(true)}>
+                  <span className="material-symbols-outlined text-2xl">menu</span>
+                </button>
+                <h1 className="text-xl font-bold tracking-tight text-white font-cursive capitalize">
                   {currentView === "home" ? `Hello, ${currentUser.name}` : currentView}
-                </h2>
+                </h1>
               </div>
-              
-              {/* Connection Streak Counter */}
-              <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full shadow-[0_0_15px_rgba(244,117,0,0.15)] animate-pulse">
-                <span className="material-symbols-outlined text-amber-500 fill-current animate-bounce text-lg" style={{ animationDuration: '2.4s' }}>local_fire_department</span>
-                <span className="text-sm font-bold text-amber-500">{currentSpace.streakDays} Day Streak</span>
-              </div>
-
-              {/* Dual Avatar Header */}
-              <div className="flex items-center gap-1.5 relative">
-                {renderAvatar(currentUser, "w-8 h-8 border border-white/20 shadow-[0_0_10px_rgba(253,186,116,0.3)]", "text-xs")}
-                <div className="w-6 h-0.5 bg-gradient-to-r from-orange-400 to-rose-400 shadow-[0_0_8px_rgba(244,117,0,0.5)]"></div>
-                {partnerUser ? (
-                  renderAvatar(partnerUser, "w-8 h-8 border border-white/20 shadow-[0_0_10px_rgba(253,186,116,0.3)]", "text-xs")
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-stone-700 flex items-center justify-center text-stone-400 text-xs border border-white/10 animate-pulse">
-                    ?
-                  </div>
-                )}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5 bg-[#2A1D15] border border-[#42281D] px-3 py-1 rounded-full text-xs font-semibold text-[#E58B58]">
+                  🔥 {currentSpace.streakDays} Day Streak
+                </div>
+                <div className="flex items-center gap-1">
+                  {renderAvatar(currentUser, "w-7 h-7 border border-[#E58B58]/40", "text-xs font-bold")}
+                  <span className="w-3 h-0.5 bg-stone-600"></span>
+                  {partnerUser ? (
+                    renderAvatar(partnerUser, "w-7 h-7 border border-[#6C8EEF]/40", "text-xs font-bold")
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-stone-700 flex items-center justify-center text-stone-400 text-xs border border-white/10 animate-pulse">
+                      ?
+                    </div>
+                  )}
+                </div>
               </div>
             </header>
           )}
 
-          {/* VIEW: ONBOARDING */}
+          {/* Scrollable Page Body */}
+          <main className="flex-grow flex-shrink flex-1 w-full max-w-4xl mx-auto px-6 py-8 flex flex-col gap-6">
           {currentView === "onboarding" && (
             <section className="view-container active-view w-full max-w-[600px] mx-auto py-6 px-4 md:py-12 md:px-8">
               <div className="glass-card flex flex-col gap-6">
@@ -1416,7 +1401,17 @@ export default function ClientPage() {
                         <p className="text-xs text-stone-400 leading-relaxed">Answer daily reflection prompts and complete challenges.</p>
                       </button>
 
-                      {/* Grid Item 5: Private Diary */}
+                      {/* Grid Item 5: Couples Games / Scoreboard */}
+                      <button 
+                        onClick={() => setCurrentView("scoreboard")}
+                        className="glass-card flex flex-col items-start text-left p-6 rounded-3xl border border-white/10 bg-stone-850/20 hover:bg-stone-800/20 transition-all cursor-pointer group"
+                      >
+                        <span className="material-symbols-outlined text-orange-400 text-3xl mb-4 group-hover:scale-110 transition-transform">sports_esports</span>
+                        <h4 className="text-base font-bold text-white mb-1">Couples Games</h4>
+                        <p className="text-xs text-stone-400 leading-relaxed">Play Link Four, Word Duel, Memory Match, and view scoreboards.</p>
+                      </button>
+
+                      {/* Grid Item 6: Private Diary */}
                       <button 
                         onClick={() => setCurrentView("diary")}
                         className="glass-card flex flex-col items-start text-left p-6 rounded-3xl border border-white/10 bg-stone-850/20 hover:bg-stone-800/20 transition-all cursor-pointer group"
@@ -1425,28 +1420,20 @@ export default function ClientPage() {
                         <h4 className="text-base font-bold text-white mb-1">Private Diary</h4>
                         <p className="text-xs text-stone-400 leading-relaxed">Notice things about your partner — moments, story hints, reminders.</p>
                       </button>
-
-                      {/* Grid Item 6: Couples Game Scoreboard */}
-                      <button 
-                        onClick={() => setCurrentView("scoreboard")}
-                        className="glass-card flex flex-col items-start text-left p-6 rounded-3xl border border-white/10 bg-stone-850/20 hover:bg-stone-800/20 transition-all cursor-pointer group"
-                      >
-                        <span className="material-symbols-outlined text-orange-400 text-3xl mb-4 group-hover:scale-110 transition-transform">leaderboard</span>
-                        <h4 className="text-base font-bold text-white mb-1">Game Scoreboard</h4>
-                        <p className="text-xs text-stone-400 leading-relaxed">Keep track of wins and draws for your favorite couples games.</p>
-                      </button>
                     </div>
                   </div>
 
                   {/* Heart / Touch Button Nudge */}
-                  <div className="flex flex-col items-center justify-center py-8 px-6 bg-stone-850/20 border border-white/10 rounded-3xl text-center relative overflow-hidden">
+                  <div className="flex flex-col items-center justify-center p-6 bg-stone-850/20 border border-white/10 rounded-3xl text-center relative overflow-hidden w-full">
                     <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-                    <h3 className="text-base font-bold text-white mb-1">Send Instant Touch</h3>
-                    <p className="text-xs text-stone-400 mb-6 max-w-sm">Tap the heart to send a silent haptic ping of love and nudge your partner in real-time.</p>
+                    <h3 className="text-lg font-bold text-white mb-2">Send Instant Touch</h3>
+                    <p className="text-sm text-stone-300 leading-relaxed w-full max-w-[260px] mx-auto text-center mb-6">
+                      Tap the heart to send a silent haptic ping of love and nudge your partner in real-time.
+                    </p>
                     
                     <button 
                       onClick={handleHeartTouch}
-                      className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 shadow-[0_0_20px_rgba(234,88,12,0.4)] hover:shadow-[0_0_30px_rgba(234,88,12,0.6)] flex items-center justify-center border border-white/20 transition-all hover:scale-105 active:scale-95 cursor-pointer relative group"
+                      className="w-20 h-20 rounded-full bg-[#D9885C] flex items-center justify-center border border-white/20 transition-all hover:scale-105 active:scale-95 cursor-pointer relative group mb-2"
                     >
                       <span className="material-symbols-outlined text-white text-3xl animate-pulse fill-current">favorite</span>
                       <span className="absolute inset-0 rounded-full border border-orange-400 animate-ping opacity-75 group-hover:animation-duration-1000"></span>
@@ -1752,167 +1739,357 @@ export default function ClientPage() {
 
           {/* VIEW: COUPLES GAME SCOREBOARD */}
           {currentView === "scoreboard" && currentSpace && (
-            <section className="view-container active-view w-full max-w-[600px] mx-auto py-6 px-4 md:py-8 md:px-6 select-none bg-scoreboard-oled min-h-[90vh] rounded-[24px] border border-white/5 shadow-2xl relative pb-24">
+            <section className="view-container active-view flex-1 min-w-0 w-full h-screen overflow-y-auto flex flex-col items-center py-8 px-6 lg:px-12 bg-scoreboard-oled rounded-[24px] border border-white/5 shadow-2xl relative select-none">
               
-              {/* Top App Bar */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
-                {/* Left: Circular back button */}
-                <button 
-                  onClick={() => setCurrentView("home")}
-                  className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-stone-300 transition-all cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                </button>
+              <div className="w-full max-w-4xl mx-auto flex flex-col gap-8 pb-24">
+                {/* Top App Bar & Header */}
+                <div className="flex items-center justify-between border-b border-[#2D2A26] pb-4 w-full">
+                  {/* Left Side: Back Arrow & Title */}
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setCurrentView("home")}
+                      className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-stone-300 transition-all cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                    </button>
+                    <h2 className="text-xl font-bold text-white font-cursive capitalize">Scoreboard & Games</h2>
+                  </div>
 
-                {/* Center: Bold title */}
-                <h3 className="text-lg font-bold text-white tracking-wide">Scoreboard</h3>
+                  {/* Center: Tab Selector (Pills) */}
+                  <div className="flex bg-stone-900/80 border border-[#2D2A26] p-1 rounded-xl">
+                    <button 
+                      onClick={() => setScoreboardTab("play")}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${scoreboardTab === "play" ? "bg-[#D9885C] text-white" : "text-stone-400 hover:text-white bg-transparent"}`}
+                    >
+                      Games
+                    </button>
+                    <button 
+                      onClick={() => setScoreboardTab("stats")}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${scoreboardTab === "stats" ? "bg-[#D9885C] text-white" : "text-stone-400 hover:text-white bg-transparent"}`}
+                    >
+                      Standings / History
+                    </button>
+                  </div>
 
-                {/* Right: Reset icon button */}
-                <button 
-                  onClick={handleResetScores}
-                  className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-stone-300 hover:text-red-400 transition-all cursor-pointer"
-                  title="Reset all game scores"
-                >
-                  <span className="material-symbols-outlined text-[18px]">refresh</span>
-                </button>
-              </div>
+                  {/* Right: Reset/Refresh Icon Button */}
+                  <button 
+                    onClick={handleResetScores}
+                    className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-stone-300 hover:text-red-400 transition-all cursor-pointer"
+                    title="Reset all game scores"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">refresh</span>
+                  </button>
+                </div>
 
-              {/* Overall Score Card (Top Summary Card) */}
-              {(() => {
-                const totalUserWins = gameScores.reduce((acc, game) => acc + (game.userScore || 0), 0);
-                const totalPartnerWins = gameScores.reduce((acc, game) => acc + (game.partnerScore || 0), 0);
-                
-                let matchStatusText = "Level pegging";
-                let statusEmoji = "🤝";
-                if (totalUserWins > totalPartnerWins) {
-                  matchStatusText = "You're ahead";
-                  statusEmoji = "🏆";
-                } else if (totalPartnerWins > totalUserWins) {
-                  matchStatusText = "Partner is ahead";
-                  statusEmoji = "👑";
-                }
-
-                return (
-                  <div className="bg-scoreboard-card p-6 rounded-[24px] shadow-lg mb-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-400/5 rounded-full blur-2xl pointer-events-none"></div>
-                    
-                    <div className="grid grid-cols-3 items-center text-center">
+                {/* TAB 1: PLAY AREA */}
+                {scoreboardTab === "play" && (
+                  <div className="w-full flex flex-col gap-6">
+                    {/* Head-to-Head Overall Score Banner */}
+                    {(() => {
+                      const totalUserWins = gameScores.reduce((acc, game) => acc + (game.userScore || 0), 0);
+                      const totalPartnerWins = gameScores.reduce((acc, game) => acc + (game.partnerScore || 0), 0);
+                      const totalPlaysAll = gameScores.reduce((acc, game) => acc + (game.userScore || 0) + (game.partnerScore || 0) + (game.draws || 0), 0);
                       
-                      {/* Left: User */}
-                      <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 rounded-full bg-amber-100/10 border-2 border-[#E58B58] flex items-center justify-center font-bold text-[#E58B58] text-lg shadow-inner mb-2">
-                          {currentUser ? currentUser.name[0].toUpperCase() : "Y"}
+                      let matchStatusText = "Level pegging";
+                      let statusEmoji = "handshake";
+                      if (totalUserWins > totalPartnerWins) {
+                        matchStatusText = "You're ahead";
+                        statusEmoji = "emoji_events";
+                      } else if (totalPartnerWins > totalUserWins) {
+                        matchStatusText = "Partner leads";
+                        statusEmoji = "military_tech";
+                      }
+
+                      return (
+                        <div className="w-full bg-[#1E1C1A] border border-[#2D2A26] rounded-3xl p-6 shadow-xl flex flex-row items-center justify-between relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                          
+                          {/* Left (You) */}
+                          <div className="flex flex-col items-center flex-1">
+                            <div className="w-12 h-12 rounded-full bg-amber-100/10 border border-[#E58B58]/40 flex items-center justify-center font-bold text-[#E58B58] text-lg shadow-inner mb-1.5">
+                              {currentUser ? currentUser.name[0].toUpperCase() : "Y"}
+                            </div>
+                            <span className="text-3xl font-extrabold text-[#E58B58] tracking-tight">{totalUserWins}</span>
+                            <span className="text-xs text-stone-400 font-semibold mt-1">You</span>
+                          </div>
+
+                          {/* Center (Status) */}
+                          <div className="flex flex-col items-center flex-1 text-center px-2">
+                            <span className="material-symbols-outlined text-2xl text-amber-400 mb-1">{statusEmoji}</span>
+                            <span className="text-sm font-bold text-white tracking-wide uppercase">
+                              {matchStatusText}
+                            </span>
+                            <span className="text-[10px] text-stone-500 font-medium mt-1">{totalPlaysAll} Rounds Played</span>
+                          </div>
+
+                          {/* Right (Partner) */}
+                          <div className="flex flex-col items-center flex-1">
+                            <div className="w-12 h-12 rounded-full bg-blue-100/10 border border-[#6C8EEF]/40 flex items-center justify-center font-bold text-[#6C8EEF] text-lg shadow-inner mb-1.5">
+                              {partnerUser ? partnerUser.name[0].toUpperCase() : "P"}
+                            </div>
+                            <span className="text-3xl font-extrabold text-[#6C8EEF] tracking-tight">{totalPartnerWins}</span>
+                            <span className="text-xs text-stone-400 font-semibold mt-1">Partner</span>
+                          </div>
                         </div>
-                        <span className="text-3xl font-extrabold text-white tracking-tight">{totalUserWins}</span>
-                        <span className="text-[10px] text-stone-500 font-bold uppercase tracking-wider mt-1">You</span>
-                      </div>
+                      );
+                    })()}
 
-                      {/* Center: Status */}
-                      <div className="flex flex-col items-center justify-center px-2">
-                        <span className="text-3xl mb-1">{statusEmoji}</span>
-                        <span className="text-[11px] font-bold text-stone-300 leading-tight uppercase tracking-wide">
-                          {matchStatusText}
-                        </span>
-                        <span className="text-[9px] text-stone-500 font-medium mt-1">Total Wins</span>
-                      </div>
+                    <div className="text-xs font-semibold tracking-wider text-stone-400 uppercase mb-4 w-full text-left">
+                      Select Game to Play
+                    </div>
 
-                      {/* Right: Partner */}
-                      <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 rounded-full bg-blue-100/10 border-2 border-[#6C8EEF] flex items-center justify-center font-bold text-[#6C8EEF] text-lg shadow-inner mb-2">
-                          {partnerUser ? partnerUser.name[0].toUpperCase() : "P"}
-                        </div>
-                        <span className="text-3xl font-extrabold text-white tracking-tight">{totalPartnerWins}</span>
-                        <span className="text-[10px] text-stone-500 font-bold uppercase tracking-wider mt-1">Partner</span>
-                      </div>
+                    {/* 2-Column Responsive Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                      {gameScores.map((game) => {
+                        const descriptions = {
+                          link_four: "Drop discs. Align 4 in a row to win.",
+                          word_duel: "Set a secret word and guess in 6 tries.",
+                          spotted: "Find the matching emoji before they do.",
+                          memory: "Flip tiles to match romantic symbol pairs."
+                        };
+                        const descText = descriptions[game.gameId] || "A fun couples multiplayer challenge.";
+                        
+                        // Dynamic badge colors for card details
+                        let badgeColor = "#E58B58";
+                        if (game.gameId === "word_duel") badgeColor = "#818CF8";
+                        if (game.gameId === "spotted") badgeColor = "#2DD4BF";
+                        if (game.gameId === "memory") badgeColor = "#34D399";
 
+                        const totalPlaysForGame = (game.userScore || 0) + (game.partnerScore || 0) + (game.draws || 0);
+
+                        return (
+                          <div 
+                            key={game.gameId} 
+                            className="bg-[#1E1C1A] border border-[#2D2A26] rounded-2xl p-5 hover:border-[#E58B58]/40 transition-all flex flex-col justify-between h-44 w-full shadow-md animate-fadeIn"
+                          >
+                            {/* Top Row: Icon badge + Title + Status */}
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center gap-3">
+                                <div 
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm flex-shrink-0"
+                                  style={{ backgroundColor: `${badgeColor}15`, border: `1px solid ${badgeColor}35` }}
+                                >
+                                  <span className="material-symbols-outlined text-[20px]" style={{ color: badgeColor }}>
+                                    {game.icon || 'sports_esports'}
+                                  </span>
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="text-sm font-bold text-white leading-none mb-1">{game.name}</h4>
+                                  <p className="text-[10px] text-stone-500 font-semibold uppercase tracking-wider">{totalPlaysForGame} games played</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Middle Row: Description & Score Pill */}
+                            <div className="flex items-center justify-between w-full my-1 gap-2">
+                              <span className="text-xs text-stone-400 truncate flex-1">{descText}</span>
+                              <div className="bg-stone-900/60 border border-[#2D2A26] px-2.5 py-0.5 rounded-full text-[10px] text-stone-300 font-bold tracking-wide flex-shrink-0">
+                                You {game.userScore || 0} - {game.partnerScore || 0} Partner
+                              </div>
+                            </div>
+
+                            {/* Bottom Row: Play Game action button */}
+                            <button 
+                              onClick={() => setActiveGameModal(game.gameId)}
+                              className="bg-[#D9885C] hover:bg-[#c6764b] text-white text-xs font-semibold py-2 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all self-end w-full sm:w-auto"
+                            >
+                              <span className="material-symbols-outlined text-sm">play_arrow</span>
+                              Play Game
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                );
-              })()}
+                )}
 
-              {/* Section Header */}
-              <div className="mb-4">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">By Game</span>
-              </div>
-
-              {/* Individual Game Score Cards (Scrollable List) */}
-              <div className="space-y-4">
-                {gameScores.map((game) => {
-                  const totalPlays = (game.userScore || 0) + (game.partnerScore || 0) + (game.draws || 0);
-                  const playStatusText = totalPlays > 0 ? `${totalPlays} games played` : "No games yet";
-
-                  return (
-                    <div key={game.gameId} className="bg-scoreboard-card p-5 rounded-2xl shadow-md border border-white/5 flex flex-col gap-4">
+                {/* TAB 2: STANDINGS & STATS AREA */}
+                {scoreboardTab === "stats" && (
+                  <div className="w-full flex flex-col gap-6">
+                    {/* Head-to-Head Overall Score Banner */}
+                    {(() => {
+                      const totalUserWins = gameScores.reduce((acc, game) => acc + (game.userScore || 0), 0);
+                      const totalPartnerWins = gameScores.reduce((acc, game) => acc + (game.partnerScore || 0), 0);
+                      const totalPlaysAll = gameScores.reduce((acc, game) => acc + (game.userScore || 0) + (game.partnerScore || 0) + (game.draws || 0), 0);
                       
-                      {/* Top Info Row */}
-                      <div className="flex items-center gap-3">
-                        {/* Game Icon Badge */}
-                        <div 
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-white text-base shadow-sm"
-                          style={{ backgroundColor: `${game.color || '#E58B58'}20`, border: `1px solid ${game.color || '#E58B58'}30` }}
-                        >
-                          <span className="material-symbols-outlined text-[20px]" style={{ color: game.color }}>
-                            {game.icon || 'sports_esports'}
-                          </span>
-                        </div>
+                      let matchStatusText = "Level pegging";
+                      let statusEmoji = "handshake";
+                      if (totalUserWins > totalPartnerWins) {
+                        matchStatusText = "You're ahead";
+                        statusEmoji = "emoji_events";
+                      } else if (totalPartnerWins > totalUserWins) {
+                        matchStatusText = "Partner leads";
+                        statusEmoji = "military_tech";
+                      }
 
-                        {/* Title & Play count */}
-                        <div className="flex-1">
-                          <h4 className="text-sm font-bold text-white leading-snug">{game.name}</h4>
-                          <span className="text-[10px] text-[#8A847F] font-semibold">{playStatusText}</span>
+                      return (
+                        <div className="w-full bg-[#1E1C1A] border border-[#2D2A26] rounded-3xl p-6 shadow-xl flex flex-row items-center justify-between relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-400/5 rounded-full blur-2xl pointer-events-none"></div>
+                          
+                          {/* Left (You) */}
+                          <div className="flex flex-col items-center flex-1">
+                            <div className="w-12 h-12 rounded-full bg-amber-100/10 border border-[#E58B58]/40 flex items-center justify-center font-bold text-[#E58B58] text-lg shadow-inner mb-1.5">
+                              {currentUser ? currentUser.name[0].toUpperCase() : "Y"}
+                            </div>
+                            <span className="text-3xl font-extrabold text-[#E58B58] tracking-tight">{totalUserWins}</span>
+                            <span className="text-xs text-stone-400 font-semibold mt-1">You</span>
+                          </div>
+
+                          {/* Center (Status) */}
+                          <div className="flex flex-col items-center flex-1 text-center px-2">
+                            <span className="material-symbols-outlined text-2xl text-amber-400 mb-1">{statusEmoji}</span>
+                            <span className="text-sm font-bold text-white tracking-wide uppercase">
+                              {matchStatusText}
+                            </span>
+                            <span className="text-[10px] text-stone-500 font-medium mt-1">{totalPlaysAll} Rounds Played</span>
+                          </div>
+
+                          {/* Right (Partner) */}
+                          <div className="flex flex-col items-center flex-1">
+                            <div className="w-12 h-12 rounded-full bg-blue-100/10 border border-[#6C8EEF]/40 flex items-center justify-center font-bold text-[#6C8EEF] text-lg shadow-inner mb-1.5">
+                              {partnerUser ? partnerUser.name[0].toUpperCase() : "P"}
+                            </div>
+                            <span className="text-3xl font-extrabold text-[#6C8EEF] tracking-tight">{totalPartnerWins}</span>
+                            <span className="text-xs text-stone-400 font-semibold mt-1">Partner</span>
+                          </div>
                         </div>
+                      );
+                    })()}
+
+                    {/* Rivalry Breakdown Section */}
+                    <div className="flex flex-col items-stretch space-y-3">
+                      <div className="mb-1">
+                        <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Rivalry Breakdown</span>
                       </div>
 
-                      {/* 3-Column Score Breakdown & win counters */}
-                      <div className="grid grid-cols-3 gap-2 bg-black/15 p-3 rounded-xl border border-white/5">
-                        
-                        {/* Left: You */}
-                        <div className="flex flex-col items-center justify-between text-center gap-1.5 border-r border-white/5">
-                          <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wider">You ({currentUser ? currentUser.name[0].toUpperCase() : 'Y'})</span>
-                          <span className="text-xl font-bold text-[#E58B58]">{game.userScore || 0}</span>
-                          <button 
-                            onClick={() => handleIncrementScore(game.gameId, 'user')}
-                            className="btn-score-adjust btn-score-adjust-user mt-1 select-none"
-                          >
-                            +1 Win
-                          </button>
-                        </div>
+                      <div className="space-y-4 flex flex-col items-stretch">
+                        {gameScores.map((game) => {
+                          const totalPlays = (game.userScore || 0) + (game.partnerScore || 0) + (game.draws || 0);
+                          const userPct = totalPlays > 0 ? ((game.userScore || 0) / totalPlays) * 100 : 0;
+                          const drawPct = totalPlays > 0 ? ((game.draws || 0) / totalPlays) * 100 : 0;
+                          const partnerPct = totalPlays > 0 ? ((game.partnerScore || 0) / totalPlays) * 100 : 0;
 
-                        {/* Center: Draws */}
-                        <div className="flex flex-col items-center justify-between text-center gap-1.5 border-r border-white/5">
-                          <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wider">Draws</span>
-                          <span className="text-xl font-bold text-[#8A847F]">{game.draws || 0}</span>
-                          <button 
-                            onClick={() => handleIncrementScore(game.gameId, 'draw')}
-                            className="btn-score-adjust mt-1 select-none"
-                          >
-                            +1 Draw
-                          </button>
-                        </div>
+                          return (
+                            <div key={game.gameId} className="w-full bg-[#1E1C1A] border border-[#2D2A26] rounded-3xl p-5 flex flex-col gap-4 shadow-md">
+                              {/* Header */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="material-symbols-outlined text-base" style={{ color: game.color }}>
+                                    {game.icon || 'sports_esports'}
+                                  </span>
+                                  <h4 className="text-xs font-bold text-white">{game.name}</h4>
+                                </div>
+                                <span className="text-[9px] text-[#8A847F] font-semibold uppercase">{totalPlays} Played</span>
+                              </div>
 
-                        {/* Right: Partner */}
-                        <div className="flex flex-col items-center justify-between text-center gap-1.5">
-                          <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wider">Partner ({partnerUser ? partnerUser.name[0].toUpperCase() : 'P'})</span>
-                          <span className="text-xl font-bold text-[#6C8EEF]">{game.partnerScore || 0}</span>
-                          <button 
-                            onClick={() => handleIncrementScore(game.gameId, 'partner')}
-                            className="btn-score-adjust btn-score-adjust-partner mt-1 select-none"
-                          >
-                            +1 Win
-                          </button>
-                        </div>
+                              {/* Custom CSS Win Split Bar */}
+                              {totalPlays > 0 ? (
+                                <div className="w-full h-2 bg-stone-900 rounded-full flex overflow-hidden border border-white/5">
+                                  {game.userScore > 0 && (
+                                    <div className="h-full bg-[#E58B58]" style={{ width: `${userPct}%` }} title={`You: ${game.userScore} wins`} />
+                                  )}
+                                  {game.draws > 0 && (
+                                    <div className="h-full bg-[#8A847F]" style={{ width: `${drawPct}%` }} title={`Draws: ${game.draws}`} />
+                                  )}
+                                  {game.partnerScore > 0 && (
+                                    <div className="h-full bg-[#6C8EEF]" style={{ width: `${partnerPct}%` }} title={`Partner: ${game.partnerScore} wins`} />
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="w-full h-2 bg-stone-850 rounded-full border border-dashed border-white/5 flex items-center justify-center animate-pulse" />
+                              )}
 
+                              {/* 3-Column Score Grid inside each game card */}
+                              <div className="grid grid-cols-3 gap-2 w-full text-center py-2 border-t border-b border-white/5 my-1">
+                                {/* Left: You */}
+                                <div className="flex flex-col items-center justify-center">
+                                  <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">You</span>
+                                  <span className="text-lg font-bold text-[#E58B58]">{game.userScore || 0}</span>
+                                  <button 
+                                    onClick={() => handleIncrementScore(game.gameId, 'user')}
+                                    className="text-[9px] px-2 py-0.5 rounded bg-amber-500/10 hover:bg-[#E58B58] text-[#E58B58] hover:text-white border border-[#E58B58]/20 transition-all cursor-pointer mt-1"
+                                  >
+                                    +1 Y
+                                  </button>
+                                </div>
+
+                                {/* Center: Draws */}
+                                <div className="flex flex-col items-center justify-center border-l border-r border-white/5">
+                                  <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">Draws</span>
+                                  <span className="text-lg font-bold text-[#8A847F]">{game.draws || 0}</span>
+                                  <button 
+                                    onClick={() => handleIncrementScore(game.gameId, 'draw')}
+                                    className="text-[9px] px-2 py-0.5 rounded bg-stone-800 hover:bg-[#8A847F] text-stone-300 hover:text-white border border-stone-700 transition-all cursor-pointer mt-1"
+                                  >
+                                    +1 D
+                                  </button>
+                                </div>
+
+                                {/* Right: Partner */}
+                                <div className="flex flex-col items-center justify-center">
+                                  <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">Partner</span>
+                                  <span className="text-lg font-bold text-[#6C8EEF]">{game.partnerScore || 0}</span>
+                                  <button 
+                                    onClick={() => handleIncrementScore(game.gameId, 'partner')}
+                                    className="text-[9px] px-2 py-0.5 rounded bg-blue-500/10 hover:bg-[#6C8EEF] text-[#6C8EEF] hover:text-white border border-[#6C8EEF]/20 transition-all cursor-pointer mt-1"
+                                  >
+                                    +1 P
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-
                     </div>
-                  );
-                })}
+
+                    {/* Recent Activity Log */}
+                    {recentSessions && recentSessions.length > 0 && (
+                      <div className="flex flex-col items-stretch mt-6">
+                        <div className="mb-3">
+                          <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Recent Activity</span>
+                        </div>
+
+                        <div className="bg-scoreboard-card rounded-xl border border-white/5 divide-y divide-white/5 overflow-hidden w-full">
+                          {recentSessions.map((session) => {
+                            const game = gameScores.find(g => g.gameId === session.gameType) || { name: "Multiplayer Game" };
+                            let logText = "";
+                            
+                            if (session.isDraw) {
+                              logText = `It was a draw in ${game.name}!`;
+                            } else if (session.winnerId === currentUser.id) {
+                              logText = `You won at ${game.name}! 🏆`;
+                            } else {
+                              logText = `${partnerUser ? partnerUser.name : "Partner"} won at ${game.name}! 👑`;
+                            }
+
+                            const timeString = new Date(session.createdAt).toLocaleDateString([], {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            });
+
+                            return (
+                              <div key={session.id} className="p-3 flex items-center justify-between gap-3 text-xs w-full">
+                                <div className="flex items-center gap-2">
+                                  <span className="material-symbols-outlined text-stone-500 text-sm">history</span>
+                                  <span className="text-stone-300 font-medium">{logText}</span>
+                                </div>
+                                <span className="text-[9px] text-stone-500 font-bold whitespace-nowrap">{timeString}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
             </section>
           )}
 
-          {/* VIEW: DISCOVER Starter Advice */}
           {currentView === "discover" && (
             <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 pb-32 md:py-12 md:px-8 md:pb-32">
               <div>
@@ -2344,28 +2521,31 @@ export default function ClientPage() {
 
           {/* VIEW: SETTINGS & PROFILE REDESIGN */}
           {currentView === "profile" && currentUser && (
-            <section className="view-container active-view w-full max-w-[600px] mx-auto py-6 px-4 md:py-12 md:px-8">
-              
-              {/* Settings Gear Header */}
-              <div className="flex justify-end mb-6">
+            <section className="view-container active-view w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-6 select-none">
+              {/* Top Bar with Settings Gear on Right */}
+              <div className="flex items-center justify-end w-full">
                 <button 
                   onClick={() => setCurrentView("settings")}
-                  className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-stone-300 hover:text-white transition-all cursor-pointer shadow-sm active:scale-95"
+                  className="w-9 h-9 rounded-full bg-[#1F1C1A] border border-[#2A2623] flex items-center justify-center text-stone-300 hover:text-white transition-all cursor-pointer active:scale-95 shadow-sm"
+                  title="Settings"
                 >
-                  <span className="material-symbols-outlined text-[22px]">settings</span>
+                  <span className="material-symbols-outlined text-[20px]">settings</span>
                 </button>
               </div>
 
-              {/* User Info Header */}
-              <div className="flex items-center gap-5 mb-8 bg-[#1E1C1A]/40 p-5 rounded-3xl border border-white/5 backdrop-blur-md">
+              {/* User Info Row */}
+              <div className="w-full flex items-center gap-4">
+                {/* Left: Avatar with camera badge */}
                 <div className="relative cursor-pointer select-none group" onClick={() => profileImageInputRef.current?.click()}>
                   {profileImagePreview ? (
-                    <img src={profileImagePreview} alt="Preview" className="w-18 h-18 rounded-full object-cover border-2 border-[#E58B58]" />
+                    <img src={profileImagePreview} alt="Preview" className="w-14 h-14 rounded-full object-cover border border-[#2A2623]" />
                   ) : (
-                    renderAvatar(currentUser, "w-18 h-18 text-2xl font-bold border-2 border-white/10")
+                    <div className="w-14 h-14 rounded-full bg-[#3D261A] border border-[#2A2623] flex items-center justify-center font-bold text-[#E58B58] text-xl shadow-inner select-none">
+                      {currentUser.name[0].toUpperCase()}
+                    </div>
                   )}
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#E58B58] border-2 border-[#121212] flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-[12px] font-bold">photo_camera</span>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#E58B58] border border-[#161413] flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-[10px] font-bold">photo_camera</span>
                   </div>
                   <input 
                     type="file" 
@@ -2375,63 +2555,83 @@ export default function ClientPage() {
                     onChange={handleProfileImageChange} 
                   />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-cursive text-3xl text-amber-100 leading-tight truncate">{currentUser.name}</h3>
-                  <p className="text-xs text-stone-400 font-medium mt-1 truncate">{currentUser.email}</p>
+                {/* User Details */}
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-cursive text-3xl text-amber-100 font-bold leading-none truncate">{currentUser.name}</h3>
+                  <p className="text-xs text-[#8E8780] font-medium mt-1 truncate">{currentUser.email}</p>
                 </div>
               </div>
 
-              {/* Section Header: Partner */}
-              <div className="flex items-center gap-3 mb-5">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Partner</span>
-                <div className="h-[2px] w-8 bg-[#E58B58] rounded-full"></div>
+              {/* PARTNER Section Label */}
+              <div className="text-xs font-bold tracking-wider text-[#8E8780] uppercase w-full text-left flex items-center gap-2">
+                <span>Partner</span>
+                <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
               </div>
 
               {/* Pairing & Invite Section */}
               {!currentSpace || !partnerUser ? (
-                /* Unpaired: Invite & Entry Card */
-                <div className="settings-card p-6 flex flex-col gap-6">
-                  <div>
-                    <h4 className="text-sm font-bold text-white mb-1">Pairing Code</h4>
-                    <p className="text-xs text-stone-400 leading-relaxed">Your invite code — share with your partner to link spaces.</p>
-                  </div>
+                /* Unpaired Invite Card */
+                <div className="w-full bg-[#1F1C1A] border border-[#2A2623] rounded-3xl p-6 flex flex-col items-center gap-5 text-center shadow-lg">
+                  <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">
+                    Your invite code — share with your partner
+                  </p>
 
-                  {/* Illustrated Envelope Element */}
+                  {/* Envelope Illustration Component */}
                   <div 
                     onClick={() => {
                       if (currentSpace?.code) {
-                        navigator.clipboard.writeText(currentSpace.code);
-                        alert(`Invite code "${currentSpace.code}" copied to clipboard! Share it with your partner.`);
+                        if (navigator.share) {
+                          navigator.share({
+                            title: 'Join my BetweenUs space!',
+                            text: `Hey! Join my private BetweenUs connection space using this code: ${currentSpace.code}`,
+                            url: `${window.location.origin}/?code=${currentSpace.code}`
+                          }).catch(() => {
+                            navigator.clipboard.writeText(currentSpace.code);
+                            alert(`Invite code "${currentSpace.code}" copied to clipboard! Share it with your partner.`);
+                          });
+                        } else {
+                          navigator.clipboard.writeText(currentSpace.code);
+                          alert(`Invite code "${currentSpace.code}" copied to clipboard! Share it with your partner.`);
+                        }
                       }
                     }}
-                    className="envelope-container"
+                    className="bg-[#E8DCC4] text-[#1E1C1A] rounded-xl p-6 shadow-md w-full max-w-[280px] mx-auto flex flex-col items-center justify-center relative cursor-pointer hover:scale-[1.02] active:scale-98 transition-transform select-none"
                   >
-                    <div className="wax-seal"></div>
-                    <span className="font-cursive text-amber-100/90 text-lg">to your person</span>
-                    <span className="font-mono text-xl tracking-[0.25em] font-extrabold text-[#E58B58] uppercase mt-3 select-all">
-                      {currentSpace ? currentSpace.code.match(/.{1,4}/g).join(" ") : "N O   C O D E"}
+                    {/* Red Wax Seal Emblem */}
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-[#962D2D] border border-white/20 flex items-center justify-center shadow-md">
+                      <span className="material-symbols-outlined text-white text-xs">favorite</span>
+                    </div>
+                    <span className="font-cursive text-xl text-stone-800/80 font-bold mt-2">to your person</span>
+                  </div>
+
+                  {/* Invite Code */}
+                  <div className="flex flex-col items-center">
+                    <span className="font-mono text-xl tracking-[0.25em] font-extrabold text-[#E58B58] uppercase select-all">
+                      {currentSpace ? currentSpace.code.toUpperCase() : "N O   C O D E"}
                     </span>
-                    <span className="text-[9px] text-[#8A847F] uppercase tracking-wider font-bold mt-4 select-none">
+                    <span className="text-[10px] text-[#8E8780] uppercase tracking-wider font-bold mt-2 select-none">
                       tap envelope to share
                     </span>
                   </div>
 
-                  {/* Divider "or" */}
-                  <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-white/5"></div>
-                    <span className="flex-shrink mx-4 text-xs font-bold text-stone-600 uppercase tracking-widest">or</span>
-                    <div className="flex-grow border-t border-white/5"></div>
+                  {/* Divider */}
+                  <div className="relative flex py-1 items-center w-full">
+                    <div className="flex-grow border-t border-[#2A2623]"></div>
+                    <span className="flex-shrink mx-4 text-[10px] font-bold text-stone-600 uppercase tracking-widest">or</span>
+                    <div className="flex-grow border-t border-[#2A2623]"></div>
                   </div>
 
-                  {/* Code Entry Form */}
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Enter your partner's code</label>
-                    <div className="flex gap-3">
+                  {/* Partner Code Entry Form */}
+                  <div className="space-y-2 w-full flex flex-col items-stretch">
+                    <label className="text-xs text-stone-400 font-semibold self-start text-left">
+                      Enter your partner's code
+                    </label>
+                    <div className="flex gap-3 w-full">
                       <input 
                         type="text" 
                         maxLength="11"
-                        className="input-field w-full py-3 px-4 font-mono uppercase tracking-[0.25em] text-center text-sm rounded-xl" 
-                        placeholder="X X X X - X X X X"
+                        className="input-field bg-[#161413] border border-[#2A2623] text-white rounded-xl py-3 px-4 font-mono uppercase tracking-[0.25em] text-center text-sm w-full outline-none focus:border-[#E58B58]/40 transition-colors" 
+                        placeholder="X X X X X X X X"
                         value={connectPartnerCode}
                         onChange={(e) => setConnectPartnerCode(e.target.value.toUpperCase())}
                       />
@@ -2440,7 +2640,7 @@ export default function ClientPage() {
                           if (!connectPartnerCode.trim()) return alert("Please enter a pairing code.");
                           handleJoinSpaceCode(connectPartnerCode);
                         }}
-                        className="px-5 py-3 bg-[#E58B58] hover:bg-[#D47A47] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                        className="px-5 py-3 bg-[#E58B58] hover:bg-[#c6764b] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer whitespace-nowrap"
                       >
                         Connect
                       </button>
@@ -2448,84 +2648,90 @@ export default function ClientPage() {
                   </div>
                 </div>
               ) : (
-                /* Paired State Card */
-                <div className="settings-card p-6 flex flex-col items-center text-center relative overflow-hidden">
+                /* Compact Paired Space Card */
+                <div className="w-full bg-[#1F1C1A] border border-[#2A2623] rounded-3xl p-6 text-center flex flex-col items-center gap-4 relative overflow-hidden shadow-lg">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl pointer-events-none"></div>
-                  <div className="flex items-center gap-4 justify-center mb-6 mt-2">
+                  
+                  {/* Avatar Connection Row */}
+                  <div className="flex items-center gap-4 justify-center mb-1">
                     {renderAvatar(currentUser, "w-14 h-14 border border-[#E58B58]/40", "text-base font-bold")}
                     <div className="h-[2px] w-12 bg-gradient-to-r from-[#E58B58] to-[#6C8EEF]"></div>
                     {renderAvatar(partnerUser, "w-14 h-14 border border-[#6C8EEF]/40", "text-base font-bold")}
                   </div>
-                  <h4 className="text-base font-bold text-white mb-1">Paired Space Connected</h4>
-                  <p className="text-xs text-stone-400 font-body-md mb-6 max-w-xs leading-relaxed">
-                    You are connected with <span className="font-cursive text-amber-200 text-lg leading-none">{partnerUser.name}</span>. Everything you plan, draw, and track will sync.
+
+                  <h4 className="text-base font-bold text-white">Paired Space Connected</h4>
+                  
+                  <p className="text-sm text-stone-300/80 leading-relaxed max-w-sm mx-auto text-center">
+                    You are connected with <span className="font-cursive text-amber-200 text-base leading-none">{partnerUser.name}</span>. Everything you plan, draw, and track will sync.
                   </p>
+                  
                   <button 
                     onClick={handleLeaveSpace}
-                    className="btn btn-glass border-red-500/20 text-red-400 hover:bg-red-500/10 text-xs py-2 px-6 rounded-full"
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-stone-700 text-stone-300 hover:text-red-400 hover:border-red-500/40 text-sm transition-colors mt-2 cursor-pointer bg-transparent"
                   >
                     Disconnect Space
                   </button>
                 </div>
               )}
-
             </section>
           )}
 
           {/* VIEW: SETTINGS SCREEN */}
           {currentView === "settings" && currentUser && (
-            <section className="view-container active-view w-full max-w-[600px] mx-auto py-6 px-4 md:py-12 md:px-8">
+            <section className="view-container active-view w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-5 select-none">
               
               {/* Settings Top Nav Bar */}
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-2">
                 <button 
                   onClick={() => {
                     setEditDisplayNameOpen(false);
                     setCurrentView("profile");
                   }}
-                  className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-stone-300 hover:text-white transition-all cursor-pointer active:scale-95"
+                  className="w-9 h-9 rounded-full bg-[#1F1C1A] border border-[#2A2623] flex items-center justify-center text-stone-300 hover:text-white transition-all cursor-pointer active:scale-95"
                 >
-                  <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
                 </button>
-                <h2 className="font-cursive text-3xl text-amber-100">Settings</h2>
-                <div className="w-10"></div> {/* Balanced spacer */}
+                <h2 className="font-cursive text-3xl text-amber-100 font-bold">Settings</h2>
+                <div className="w-9"></div> {/* Balanced spacer */}
               </div>
 
               {/* Group 1: Subscription */}
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Subscription</span>
+              <div className="flex items-center gap-2 self-start text-xs font-semibold tracking-wider text-[#8E8780] uppercase w-full">
+                <span>Subscription</span>
+                <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
               </div>
-              <div className="settings-card">
+              <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden divide-y divide-[#2A2623] w-full shadow-md">
                 <div 
                   onClick={() => alert("Thank you for supporting BetweenUs! Upgrade to Pro features is coming soon.")}
-                  className="settings-row"
+                  className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors"
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-white">BetweenUs Pro</span>
-                    <span className="text-xs text-stone-400">Upgrade to unlock full features</span>
+                    <span className="text-xs text-[#8E8780]">Upgrade to unlock the full space</span>
                   </div>
                   <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
                 </div>
                 <div 
                   onClick={() => alert("Purchases successfully restored.")}
-                  className="settings-row"
+                  className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors"
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-white">Restore purchases</span>
-                    <span className="text-xs text-stone-400">Already subscribed? Tap to restore</span>
+                    <span className="text-xs text-[#8E8780]">Already subscribed? Tap to restore</span>
                   </div>
                   <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
                 </div>
               </div>
 
               {/* Group 2: Account */}
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Account</span>
+              <div className="flex items-center gap-2 self-start text-xs font-semibold tracking-wider text-[#8E8780] uppercase w-full">
+                <span>Account</span>
+                <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
               </div>
-              <div className="settings-card">
+              <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden divide-y divide-[#2A2623] w-full shadow-md">
                 
                 {/* Display Name Tile (Inline Editor) */}
-                <div className="settings-row cursor-default">
+                <div className="p-4 flex flex-col justify-center cursor-default">
                   {editDisplayNameOpen ? (
                     <div className="flex items-center gap-2 w-full py-1">
                       <input 
@@ -2541,7 +2747,7 @@ export default function ClientPage() {
                           handleProfileSave();
                           setEditDisplayNameOpen(false);
                         }}
-                        className="px-4 py-2 bg-[#E58B58] hover:bg-[#D47A47] text-white text-[11px] rounded-lg font-bold transition-colors cursor-pointer"
+                        className="px-4 py-2 bg-[#E58B58] hover:bg-[#c6764b] text-white text-[11px] rounded-lg font-bold transition-colors cursor-pointer"
                       >
                         Save
                       </button>
@@ -2558,11 +2764,11 @@ export default function ClientPage() {
                   ) : (
                     <div 
                       onClick={() => setEditDisplayNameOpen(true)}
-                      className="flex items-center justify-between w-full"
+                      className="flex items-center justify-between w-full cursor-pointer"
                     >
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-white">Display name</span>
-                        <span className="text-xs text-stone-400">{currentUser.name}</span>
+                        <span className="text-xs text-[#8E8780]">{currentUser.name}</span>
                       </div>
                       <span className="material-symbols-outlined text-stone-500 hover:text-white text-lg transition-colors">edit</span>
                     </div>
@@ -2571,22 +2777,22 @@ export default function ClientPage() {
 
                 <div 
                   onClick={() => alert("Notification settings configured. You will receive updates about date countdowns and daily challenges.")}
-                  className="settings-row"
+                  className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors"
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-white">Notifications</span>
-                    <span className="text-xs text-stone-400">Choose what you hear about</span>
+                    <span className="text-xs text-[#8E8780]">Choose what you hear about</span>
                   </div>
                   <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
                 </div>
 
                 <div 
                   onClick={() => alert("To add widgets, go to your iOS / Android home screen, long press, search for BetweenUs, and select either the Date Countdown or Drawing Canvas widgets.")}
-                  className="settings-row"
+                  className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors"
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-white">Widgets</span>
-                    <span className="text-xs text-stone-400">Set up Countdown and Canvas</span>
+                    <span className="text-xs text-[#8E8780]">Set up Countdown and Canvas</span>
                   </div>
                   <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
                 </div>
@@ -2594,7 +2800,7 @@ export default function ClientPage() {
                 {/* Sign Out (Terracotta) */}
                 <div 
                   onClick={handleLogout}
-                  className="settings-row hover:bg-red-500/5 group"
+                  className="p-4 flex items-center justify-between hover:bg-red-500/5 group cursor-pointer transition-colors"
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-[#E58B58] group-hover:text-red-400 transition-colors">Sign out</span>
@@ -2605,43 +2811,45 @@ export default function ClientPage() {
                 {/* Delete Account (Terracotta) */}
                 <div 
                   onClick={handleDeleteAccount}
-                  className="settings-row hover:bg-red-500/5 group"
+                  className="p-4 flex items-center justify-between hover:bg-red-500/5 group cursor-pointer transition-colors"
                 >
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-[#E58B58] group-hover:text-red-400 transition-colors">Delete account</span>
+                    <span className="text-sm font-bold text-red-400 group-hover:text-red-300 transition-colors">Delete account</span>
                   </div>
-                  <span className="material-symbols-outlined text-[#E58B58] group-hover:text-red-400 text-base transition-colors">delete_forever</span>
+                  <span className="material-symbols-outlined text-red-400 group-hover:text-red-300 text-base transition-colors">delete_forever</span>
                 </div>
 
               </div>
 
               {/* Group 3: Feedback */}
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Feedback</span>
+              <div className="flex items-center gap-2 self-start text-xs font-semibold tracking-wider text-[#8E8780] uppercase w-full">
+                <span>Feedback</span>
+                <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
               </div>
-              <div className="settings-card">
+              <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden w-full shadow-md">
                 <a 
                   href="mailto:support@betweenus.app?subject=Feedback"
-                  className="settings-row no-underline text-stone-300"
+                  className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors no-underline text-stone-300"
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-white">Leave feedback</span>
-                    <span className="text-xs text-stone-400">Tell us what to improve or what you want next</span>
+                    <span className="text-xs text-[#8E8780]">Tell us what to improve or what you want next</span>
                   </div>
                   <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
                 </a>
               </div>
 
               {/* Group 4: Legal */}
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Legal</span>
+              <div className="flex items-center gap-2 self-start text-xs font-semibold tracking-wider text-[#8E8780] uppercase w-full">
+                <span>Legal</span>
+                <div className="h-0.5 w-6 bg-[#E58B58] rounded-full"></div>
               </div>
-              <div className="settings-card">
-                <a href="#" onClick={(e) => { e.preventDefault(); alert("Terms of Service summary: Play fair, stay connected, keep it between us!"); }} className="settings-row no-underline text-stone-300">
+              <div className="bg-[#1F1C1A] border border-[#2A2623] rounded-2xl overflow-hidden divide-y divide-[#2A2623] w-full shadow-md">
+                <a href="#" onClick={(e) => { e.preventDefault(); alert("Terms of Service summary: Play fair, stay connected, keep it between us!"); }} className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors no-underline text-stone-300">
                   <span className="text-sm font-bold text-white">Terms of Service</span>
                   <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
                 </a>
-                <a href="#" onClick={(e) => { e.preventDefault(); alert("Privacy Policy summary: Your private entries, drawings, and scores are strictly local/private between you and your partner."); }} className="settings-row no-underline text-stone-300">
+                <a href="#" onClick={(e) => { e.preventDefault(); alert("Privacy Policy summary: Your private entries, drawings, and scores are strictly local/private between you and your partner."); }} className="p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors no-underline text-stone-300">
                   <span className="text-sm font-bold text-white">Privacy Policy</span>
                   <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
                 </a>
@@ -2651,11 +2859,10 @@ export default function ClientPage() {
               <div className="text-center py-6">
                 <p className="text-[10px] font-bold tracking-wider text-stone-600 uppercase">BetweenUs • v1.0</p>
               </div>
-
             </section>
           )}
-
         </main>
+      </div>
 
         {/* Bottom Nav Bar (Mobile Only) */}
         {currentUser && currentView !== "landing" && currentView !== "onboarding" && currentSpace && (
@@ -3074,6 +3281,67 @@ export default function ClientPage() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* --- INTERACTIVE SCOREBOARD GAMES MODALS --- */}
+      {activeGameModal && (
+        <div className="modal-overlay flex" onClick={() => setActiveGameModal(null)}>
+          <div className="modal-content glass-card rounded-[28px] max-w-md p-6 overflow-y-auto max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close text-stone-400 hover:text-white" onClick={() => setActiveGameModal(null)}>&times;</button>
+            
+            <h3 className="text-xl font-bold font-cursive text-orange-200 mb-4 text-center">
+              {activeGameModal === "link_four" && "Link Four"}
+              {activeGameModal === "word_duel" && "Word Duel"}
+              {activeGameModal === "spotted" && "Spotted"}
+              {activeGameModal === "memory" && "Memory Match"}
+            </h3>
+
+            {activeGameModal === "link_four" && (
+              <LinkFour 
+                currentUser={currentUser}
+                partnerUser={partnerUser}
+                onComplete={(winnerType) => {
+                  handleIncrementScore("link_four", winnerType);
+                  setActiveGameModal(null);
+                }}
+              />
+            )}
+
+            {activeGameModal === "word_duel" && (
+              <WordDuel 
+                currentUser={currentUser}
+                partnerUser={partnerUser}
+                onComplete={(winnerType) => {
+                  handleIncrementScore("word_duel", winnerType);
+                  setActiveGameModal(null);
+                }}
+              />
+            )}
+
+            {activeGameModal === "spotted" && (
+              <Spotted 
+                currentUser={currentUser}
+                partnerUser={partnerUser}
+                onComplete={(winnerType) => {
+                  handleIncrementScore("spotted", winnerType);
+                  setActiveGameModal(null);
+                }}
+              />
+            )}
+
+            {activeGameModal === "memory" && (
+              <MemoryMatch 
+                currentUser={currentUser}
+                partnerUser={partnerUser}
+                onComplete={(winnerType) => {
+                  handleIncrementScore("memory", winnerType);
+                  setActiveGameModal(null);
+                }}
+              />
+            )}
+            
           </div>
         </div>
       )}
