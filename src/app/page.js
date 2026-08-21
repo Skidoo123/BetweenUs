@@ -81,6 +81,45 @@ export default function ClientPage() {
   // Dev toolbar state
   const [devToolbarCollapsed, setDevToolbarCollapsed] = useState(true);
 
+  // New UX state variables
+  const [partnerOnboardName, setPartnerOnboardName] = useState("");
+  const [activeActivityModal, setActiveActivityModal] = useState(null);
+  const [loveLetters, setLoveLetters] = useState([]);
+  const [datePlans, setDatePlans] = useState([]);
+  const [currentDrawing, setCurrentDrawing] = useState(null);
+  const [touchPings, setTouchPings] = useState([]);
+  const [floatingHearts, setFloatingHearts] = useState([]);
+
+  // Letter drafts
+  const [loveLetterInput, setLoveLetterInput] = useState("");
+
+  // Date Plan drafts
+  const [dateTitle, setDateTitle] = useState("");
+  const [dateVal, setDateVal] = useState("");
+  const [dateLocation, setDateLocation] = useState("");
+  const [dateDesc, setDateDesc] = useState("");
+
+  // Drawing configs
+  const [drawColor, setDrawColor] = useState("#FDBA74");
+  const [drawSize, setDrawSize] = useState(4);
+
+  // Private Diary states
+  const [diaryEntries, setDiaryEntries] = useState([]);
+  const [diaryActiveFilter, setDiaryActiveFilter] = useState("All");
+  const [diarySearchOpen, setDiarySearchOpen] = useState(false);
+  const [diarySearchQuery, setDiarySearchQuery] = useState("");
+  const [diaryModalOpen, setDiaryModalOpen] = useState(false);
+
+  // Diary Form fields
+  const [diaryTitleInput, setDiaryTitleInput] = useState("");
+  const [diaryContentInput, setDiaryContentInput] = useState("");
+  const [diaryCategoryInput, setDiaryCategoryInput] = useState("Things I Notice");
+  const [diaryDateInput, setDiaryDateInput] = useState("");
+  const [diaryImageInput, setDiaryImageInput] = useState(null);
+
+  // Couples Game Scoreboard states
+  const [gameScores, setGameScores] = useState([]);
+
   // Load state on mount
   useEffect(() => {
     DB.init();
@@ -123,9 +162,23 @@ export default function ClientPage() {
             const partnerId = space.creatorId === user.id ? space.partnerId : space.creatorId;
             const partner = users.find((p) => p.id === partnerId);
             setPartnerUser(partner || null);
+
+            // Load Love Letters, Drawings, Dates, Touch Pings, Diary, Game Scores
+            setLoveLetters(DB.getLoveLetters(space.id));
+            setDatePlans(DB.getDatePlans(space.id));
+            setCurrentDrawing(DB.getDrawing(space.id));
+            setTouchPings(DB.getTouchPings(space.id));
+            setDiaryEntries(DB.getDiaryEntries(space.id, user.id));
+            setGameScores(DB.getGameScores(space.id));
           } else {
             setCurrentSpace(null);
             setPartnerUser(null);
+            setLoveLetters([]);
+            setDatePlans([]);
+            setCurrentDrawing(null);
+            setTouchPings([]);
+            setDiaryEntries([]);
+            setGameScores([]);
           }
         } else {
           setCurrentSpace(null);
@@ -143,6 +196,12 @@ export default function ClientPage() {
     setCurrentUser(null);
     setCurrentSpace(null);
     setPartnerUser(null);
+    setLoveLetters([]);
+    setDatePlans([]);
+    setCurrentDrawing(null);
+    setTouchPings([]);
+    setDiaryEntries([]);
+    setGameScores([]);
     setCurrentView("landing");
   }
 
@@ -324,7 +383,8 @@ export default function ClientPage() {
 
   const handleCopyCode = () => {
     if (!generatedCode) return;
-    navigator.clipboard.writeText(generatedCode);
+    const directLink = `${window.location.origin}/?code=${generatedCode}`;
+    navigator.clipboard.writeText(directLink);
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 2000);
   };
@@ -443,6 +503,128 @@ export default function ClientPage() {
       DB.set(DB.KEYS.USERS, users);
       loadState();
       alert("Profile saved!");
+    }
+  };
+
+  const handleSendLetter = () => {
+    if (!loveLetterInput.trim() || !currentSpace || !currentUser) return;
+    DB.sendLoveLetter(currentSpace.id, currentUser.id, currentUser.name, loveLetterInput.trim());
+    setLoveLetterInput("");
+    loadState();
+    alert("Love Letter sealed and sent! ✉️");
+  };
+
+  const handleSaveDate = () => {
+    if (!dateTitle.trim() || !dateVal || !dateLocation.trim() || !currentSpace) {
+      alert("Title, Date, and Location are required!");
+      return;
+    }
+    DB.addDatePlan(currentSpace.id, dateTitle.trim(), new Date(dateVal).toISOString(), dateLocation.trim(), dateDesc.trim());
+    setDateTitle("");
+    setDateVal("");
+    setDateLocation("");
+    setDateDesc("");
+    loadState();
+  };
+
+  const handleToggleDateItem = (dateId, itemId) => {
+    if (!currentSpace) return;
+    DB.toggleDateBucketItem(currentSpace.id, dateId, itemId);
+    loadState();
+  };
+
+  const handleDeleteDate = (dateId) => {
+    if (!currentSpace) return;
+    DB.deleteDatePlan(currentSpace.id, dateId);
+    loadState();
+  };
+
+  const handleHeartTouch = () => {
+    if (!currentSpace || !currentUser) return;
+    DB.sendTouchPing(currentSpace.id, currentUser.id, currentUser.name);
+    loadState();
+    
+    // Trigger floating hearts animation
+    const newHearts = Array.from({ length: 15 }).map((_, i) => ({
+      id: Math.random(),
+      x: 30 + Math.random() * 40,
+      y: 80 - Math.random() * 20
+    }));
+    setFloatingHearts(newHearts);
+    setTimeout(() => {
+      setFloatingHearts([]);
+    }, 2000);
+  };
+
+  const handleSaveCanvasDrawing = (dataUrl) => {
+    if (!currentSpace || !currentUser) return;
+    DB.saveDrawing(currentSpace.id, currentUser.id, dataUrl);
+    loadState();
+    alert("Drawing shared with your partner! 🎨");
+  };
+
+  const handleSaveDiaryEntry = () => {
+    if (!diaryTitleInput.trim() || !diaryContentInput.trim() || !currentSpace || !currentUser) {
+      alert("Title and Note Content are required!");
+      return;
+    }
+    DB.addDiaryEntry(
+      currentSpace.id,
+      currentUser.id,
+      diaryTitleInput.trim(),
+      diaryContentInput.trim(),
+      diaryCategoryInput,
+      diaryDateInput,
+      diaryImageInput
+    );
+    setDiaryTitleInput("");
+    setDiaryContentInput("");
+    setDiaryCategoryInput("Things I Notice");
+    setDiaryDateInput("");
+    setDiaryImageInput(null);
+    setDiaryModalOpen(false);
+    loadState();
+  };
+
+  const handleDeleteDiaryEntry = (entryId) => {
+    if (!currentSpace || !currentUser) return;
+    if (confirm("Are you sure you want to delete this diary entry?")) {
+      DB.deleteDiaryEntry(currentSpace.id, currentUser.id, entryId);
+      loadState();
+    }
+  };
+
+  const handleDiaryImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image size should be less than 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setDiaryImageInput(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleIncrementScore = (gameId, winnerType) => {
+    if (!currentSpace) return;
+    DB.updateGameScore(currentSpace.id, gameId, winnerType);
+    loadState();
+  };
+
+  const handleResetScores = () => {
+    if (!currentSpace) return;
+    if (confirm("Are you sure you want to reset all game scores? This cannot be undone.")) {
+      DB.resetGameScores(currentSpace.id);
+      loadState();
     }
   };
 
@@ -750,12 +932,29 @@ export default function ClientPage() {
 
       {/* Mobile Header Bar */}
       {currentUser && currentView !== "onboarding" && currentSpace && (
-        <header className="fixed top-0 left-0 right-0 h-16 z-40 bg-surface/30 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 lg:hidden">
-          <button className="text-primary flex items-center justify-center cursor-pointer bg-transparent border-0" onClick={() => setMobileSidebarOpen(true)}>
+        <header className="fixed top-0 left-0 right-0 h-16 z-40 bg-stone-900/80 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 lg:hidden">
+          <button className="text-orange-400 flex items-center justify-center cursor-pointer bg-transparent border-0 mr-2 animate-pulse" onClick={() => setMobileSidebarOpen(true)}>
             <span className="material-symbols-outlined text-2xl">menu</span>
           </button>
-          <h2 className="font-serif text-lg font-bold text-white capitalize">{currentView === "home" ? "Sanctuary" : currentView === "chat" ? "Our Space" : currentView === "daily" ? "Rituals" : currentView}</h2>
-          {renderAvatar(currentUser, "w-8 h-8", "text-xs")}
+          
+          {/* Streak Counter */}
+          <div className="flex items-center gap-1 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full">
+            <span className="material-symbols-outlined text-amber-500 text-sm fill-current">local_fire_department</span>
+            <span className="text-xs font-bold text-amber-500">{currentSpace.streakDays}d</span>
+          </div>
+
+          {/* Connected Dual Avatars */}
+          <div className="flex items-center gap-1 relative ml-auto">
+            {renderAvatar(currentUser, "w-6 h-6 border border-white/20", "text-[10px]")}
+            <div className="w-4 h-0.5 bg-gradient-to-r from-orange-400 to-rose-400"></div>
+            {partnerUser ? (
+              renderAvatar(partnerUser, "w-6 h-6 border border-white/20", "text-[10px]")
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-stone-700 flex items-center justify-center text-stone-400 text-[10px] border border-white/10 animate-pulse">
+                ?
+              </div>
+            )}
+          </div>
         </header>
       )}
 
@@ -799,6 +998,14 @@ export default function ClientPage() {
                 <span className="material-symbols-outlined">auto_stories</span>
                 <span className="font-label-md text-label-md">Memories</span>
               </a>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "diary" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("diary"); }}>
+                <span className="material-symbols-outlined">book</span>
+                <span className="font-label-md text-label-md">Diary</span>
+              </a>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "scoreboard" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("scoreboard"); }}>
+                <span className="material-symbols-outlined">leaderboard</span>
+                <span className="font-label-md text-label-md">Scoreboard</span>
+              </a>
               <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "insights" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("insights"); }}>
                 <span className="material-symbols-outlined">insights</span>
                 <span className="font-label-md text-label-md">Insights</span>
@@ -830,6 +1037,36 @@ export default function ClientPage() {
 
         {/* Main Content Area */}
         <main className="main-content flex-1 min-h-screen" style={{ marginLeft: currentUser ? "var(--sidebar-width)" : "0", width: currentUser ? "calc(100% - var(--sidebar-width))" : "100%" }}>
+          
+          {/* Top Bar Header (Streak & Dual Avatars) */}
+          {currentUser && currentView !== "onboarding" && currentSpace && (
+            <header className="w-full h-16 border-b border-white/10 px-8 hidden lg:flex items-center justify-between bg-stone-900/50 backdrop-blur-md sticky top-0 z-30">
+              <div className="flex items-center gap-4">
+                <h2 className="text-xl font-bold text-white font-cursive capitalize">
+                  {currentView === "home" ? `Hello, ${currentUser.name}` : currentView}
+                </h2>
+              </div>
+              
+              {/* Connection Streak Counter */}
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full shadow-[0_0_15px_rgba(244,117,0,0.15)] animate-pulse">
+                <span className="material-symbols-outlined text-amber-500 fill-current animate-bounce text-lg" style={{ animationDuration: '2.4s' }}>local_fire_department</span>
+                <span className="text-sm font-bold text-amber-500">{currentSpace.streakDays} Day Streak</span>
+              </div>
+
+              {/* Dual Avatar Header */}
+              <div className="flex items-center gap-1.5 relative">
+                {renderAvatar(currentUser, "w-8 h-8 border border-white/20 shadow-[0_0_10px_rgba(253,186,116,0.3)]", "text-xs")}
+                <div className="w-6 h-0.5 bg-gradient-to-r from-orange-400 to-rose-400 shadow-[0_0_8px_rgba(244,117,0,0.5)]"></div>
+                {partnerUser ? (
+                  renderAvatar(partnerUser, "w-8 h-8 border border-white/20 shadow-[0_0_10px_rgba(253,186,116,0.3)]", "text-xs")
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-stone-700 flex items-center justify-center text-stone-400 text-xs border border-white/10 animate-pulse">
+                    ?
+                  </div>
+                )}
+              </div>
+            </header>
+          )}
 
           {/* VIEW: ONBOARDING */}
           {currentView === "onboarding" && (
@@ -865,26 +1102,39 @@ export default function ClientPage() {
                   <div className="text-center font-bold text-on-surface-variant/50">OR</div>
 
                   {/* Create Space */}
-                  <div className="p-6 bg-white/20 rounded-2xl border border-white/30 space-y-4">
-                    <h3 className="text-lg font-bold">Create a New Space</h3>
+                  <div className="p-6 bg-stone-800/40 rounded-3xl border border-white/10 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
+                    <h3 className="text-xl font-bold font-cursive text-amber-300">
+                      {generatedCode ? `Invite ${partnerOnboardName || "Partner"}` : "Create a New Space"}
+                    </h3>
                     {generatedCode ? (
                       <div className="space-y-4 text-center">
-                        <p className="text-sm text-on-surface-variant">Share this code with your partner to pair your space:</p>
-                        <div className="py-4 px-6 bg-white/10 rounded-xl border border-white/20 font-mono text-3xl font-bold tracking-widest text-primary text-center select-all">
-                          {generatedCode}
+                        <p className="text-sm text-stone-300">Copy and send this direct invitation link to your partner:</p>
+                        <div className="py-4 px-6 bg-black/35 rounded-2xl border border-white/15 font-mono text-xs font-semibold text-orange-200 text-center select-all break-all select-none">
+                          {`${typeof window !== 'undefined' ? window.location.origin : ''}/?code=${generatedCode}`}
                         </div>
-                        <button className="btn btn-primary w-full py-3.5 flex justify-center items-center gap-2" onClick={handleCopyCode}>
+                        <button className="btn btn-primary w-full py-3.5 flex justify-center items-center gap-2 btn-terracotta" onClick={handleCopyCode}>
                           <span className="material-symbols-outlined text-[20px]">content_copy</span>
-                          {copySuccess ? "Copied! ✨" : "Copy Invite Code"}
+                          {copySuccess ? "Copied Link! ✨" : "Copy Invite Link"}
                         </button>
-                        <div className="flex items-center justify-center gap-2 text-xs text-on-surface-variant mt-2">
-                          <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
+                        <div className="flex items-center justify-center gap-2 text-xs text-stone-400 mt-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
                           <span>Waiting for your partner to join...</span>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <label className="input-label text-xs uppercase tracking-widest text-on-surface-variant font-bold">Select Relationship Mode</label>
+                        <div className="input-group">
+                          <label className="input-label text-xs uppercase tracking-widest text-stone-400 font-bold">Who is your partner? (e.g. Fareedah)</label>
+                          <input
+                            type="text"
+                            className="input-field"
+                            placeholder="Enter partner's name"
+                            value={partnerOnboardName}
+                            onChange={(e) => setPartnerOnboardName(e.target.value)}
+                          />
+                        </div>
+
+                        <label className="input-label text-xs uppercase tracking-widest text-stone-400 font-bold">Select Relationship Mode</label>
                         
                         <div className="grid grid-cols-2 gap-3 w-full">
                           {[
@@ -948,71 +1198,179 @@ export default function ClientPage() {
                 
                 {/* Left/Main Columns */}
                 <div className="lg:col-span-2 space-y-8">
-                  {/* Partner Status Overview */}
-                  <section className="flex flex-col sm:flex-row items-center sm:text-left text-center gap-6 p-6 glass-card rounded-[32px] border border-white/10 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                  
+                  {/* Horizontal Carousel / Promos */}
+                  <div className="carousel-container select-none">
+                    {/* Promo Card 1: Daily Connection Ritual */}
+                    <div className="carousel-card bg-gradient-to-br from-orange-600/40 to-amber-900/40 border border-orange-500/25 p-5 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg backdrop-blur-md">
+                      <div>
+                        <div className="flex items-center gap-1.5 text-orange-300 text-xs font-bold uppercase tracking-wider mb-2">
+                          <span className="material-symbols-outlined text-sm">local_fire_department</span>
+                          <span>Keep Streak Burning</span>
+                        </div>
+                        <h4 className="text-sm font-semibold text-white line-clamp-2 leading-relaxed">
+                          {todayQuestion ? todayQuestion.text : "Answer today's prompt to keep your streak alive!"}
+                        </h4>
+                      </div>
+                      <button 
+                        onClick={() => setCurrentView("daily")}
+                        className="self-start text-xs font-bold text-orange-200 bg-orange-500/20 hover:bg-orange-500/30 px-3 py-1.5 rounded-lg border border-orange-500/30 transition-all cursor-pointer"
+                      >
+                        {myAnswer ? "View Responses" : "Answer Now"}
+                      </button>
+                    </div>
+
+                    {/* Promo Card 2: Love Letters */}
+                    {loveLetters.length > 0 && (
+                      <div className="carousel-card bg-gradient-to-br from-rose-600/40 to-rose-900/40 border border-rose-500/25 p-5 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg backdrop-blur-md">
+                        <div>
+                          <div className="flex items-center gap-1.5 text-rose-300 text-xs font-bold uppercase tracking-wider mb-2">
+                            <span className="material-symbols-outlined text-sm">drafts</span>
+                            <span>Cozy Notes</span>
+                          </div>
+                          <h4 className="text-sm font-semibold text-white line-clamp-2 leading-relaxed">
+                            Read letters and digital notes left in your private mailbox.
+                          </h4>
+                        </div>
+                        <button 
+                          onClick={() => setActiveActivityModal('love_letter_list')}
+                          className="self-start text-xs font-bold text-rose-200 bg-rose-500/20 hover:bg-rose-500/30 px-3 py-1.5 rounded-lg border border-rose-500/30 transition-all cursor-pointer"
+                        >
+                          Open Mailbox ({loveLetters.length})
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Promo Card 3: Draw Together */}
+                    <div className="carousel-card bg-gradient-to-br from-indigo-600/40 to-indigo-900/40 border border-indigo-500/25 p-5 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg backdrop-blur-md">
+                      <div>
+                        <div className="flex items-center gap-1.5 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
+                          <span className="material-symbols-outlined text-sm">brush</span>
+                          <span>Collaborative Canvas</span>
+                        </div>
+                        <h4 className="text-sm font-semibold text-white line-clamp-2 leading-relaxed">
+                          Sketch, draw, and share real-time turn-based doodles with each other.
+                        </h4>
+                      </div>
+                      <button 
+                        onClick={() => setActiveActivityModal('draw')}
+                        className="self-start text-xs font-bold text-indigo-200 bg-indigo-500/20 hover:bg-indigo-500/30 px-3 py-1.5 rounded-lg border border-indigo-500/30 transition-all cursor-pointer"
+                      >
+                        Sketch Canvas
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Partner Status Card */}
+                  <section className="flex flex-col sm:flex-row items-center sm:text-left text-center gap-6 p-6 bg-stone-900/40 rounded-3xl border border-white/10 relative overflow-hidden shadow-md">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-orange-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
                     
-                    <div className="w-24 h-24 relative flex-shrink-0">
-                      <div className="absolute inset-0 bg-primary/20 rounded-full animate-subtle-pulse -m-2 blur-md"></div>
-                      <div className="w-full h-full rounded-full border-2 border-primary/30 relative z-10 overflow-hidden flex items-center justify-center font-serif text-white text-3xl font-bold">
+                    <div className="w-20 h-20 relative flex-shrink-0">
+                      <div className="absolute inset-0 bg-orange-400/20 rounded-full animate-subtle-pulse -m-1.5 blur-md"></div>
+                      <div className="w-full h-full rounded-full border border-orange-400/30 relative z-10 overflow-hidden flex items-center justify-center text-white text-3xl font-bold bg-stone-850">
                         {partnerUser ? (
                           partnerUser.avatarUrl ? (
                             <img className="w-full h-full object-cover" src={partnerUser.avatarUrl} alt={partnerUser.name} />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center" style={{ background: partnerUser.avatarColor }}>
+                            <div className="w-full h-full flex items-center justify-center font-cursive" style={{ background: partnerUser.avatarColor }}>
                               {partnerUser.name[0].toUpperCase()}
                             </div>
                           )
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-500">
-                            P
+                          <div className="w-full h-full flex items-center justify-center bg-stone-800 text-stone-400 text-xl font-cursive">
+                            ?
                           </div>
                         )}
                       </div>
-                      <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-400 rounded-full border-4 border-surface z-25 animate-pulse"></div>
+                      {partnerUser && (
+                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 rounded-full border-2 border-stone-900 z-20 animate-pulse"></div>
+                      )}
                     </div>
                     
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-                        <h2 className="font-title-md text-2xl text-primary-fixed-dim font-bold">{partnerUser ? `${partnerUser.name} & Me` : currentUser.name}</h2>
+                        <h2 className="font-cursive text-3xl text-orange-200 font-bold">{partnerUser ? `${partnerUser.name} & Me` : currentUser.name}</h2>
                         {partnerUser && (
-                          <span className="bg-surface/60 border border-white/20 rounded-full px-3 py-0.5 text-xs flex items-center gap-1 shadow-md backdrop-blur-md text-on-surface">
+                          <span className="bg-stone-850/80 border border-white/10 rounded-full px-3 py-0.5 text-xs flex items-center gap-1 shadow-md text-stone-300">
                             <span>{partnerUser.mood || "😐"}</span> {partnerUser.moodLabel || "Okay"}
                           </span>
                         )}
                       </div>
-                      <p className="font-body-md text-sm text-on-surface-variant opacity-80">
-                        {currentSpace.relationshipMode.replace("_", " ").toUpperCase()} Space • 🔥 {currentSpace.streakDays} Day Streak
+                      <p className="text-xs text-stone-400 font-medium tracking-wide">
+                        {currentSpace.relationshipMode.replace("_", " ").toUpperCase()} SPACE • 🔥 {currentSpace.streakDays} DAY STREAK
                       </p>
                     </div>
                   </section>
 
-                  {/* Daily Ritual Card */}
-                  <section className="bg-white/5 backdrop-blur-[32px] border border-white/10 rounded-[32px] p-8 shadow-[inset_0_0_20px_rgba(255,255,255,0.02)] relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none transition-opacity group-hover:opacity-100 opacity-50"></div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="material-symbols-outlined text-primary-fixed-dim text-lg">auto_awesome</span>
-                      <span className="font-label-sm text-xs text-primary-fixed-dim uppercase tracking-wider font-semibold">Daily Connection Ritual</span>
-                    </div>
-                    <h3 className="font-headline-lg-mobile text-xl text-on-surface mb-6 leading-tight font-medium max-w-xl">
-                      {todayQuestion ? todayQuestion.text : "Loading connection prompts..."}
-                    </h3>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <button className="bg-primary/20 hover:bg-primary/30 text-primary-fixed-dim font-body-md text-sm py-4 px-6 rounded-xl border border-primary/20 transition-all duration-200 flex justify-center items-center gap-2" onClick={() => setCurrentView("daily")}>
-                        <span className="material-symbols-outlined text-lg">edit</span>
-                        {isQuestionRevealed ? "View Responses" : myAnswer ? "Waiting for Partner" : "Answer Prompt"}
+                  {/* 2x2 Action Grid */}
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-4 pl-1">Intimate Sanctuary Grid</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Grid Item 1: Love Letter */}
+                      <button 
+                        onClick={() => setActiveActivityModal('love_letter_write')}
+                        className="glass-card flex flex-col items-start text-left p-6 rounded-3xl border border-white/10 bg-stone-850/20 hover:bg-stone-800/20 transition-all cursor-pointer group"
+                      >
+                        <span className="material-symbols-outlined text-orange-400 text-3xl mb-4 group-hover:scale-110 transition-transform">favorite</span>
+                        <h4 className="text-base font-bold text-white mb-1">Love Letter</h4>
+                        <p className="text-xs text-stone-400 leading-relaxed">Seal private notes and digital love letters for each other.</p>
+                      </button>
+
+                      {/* Grid Item 2: Draw Together */}
+                      <button 
+                        onClick={() => setActiveActivityModal('draw')}
+                        className="glass-card flex flex-col items-start text-left p-6 rounded-3xl border border-white/10 bg-stone-850/20 hover:bg-stone-800/20 transition-all cursor-pointer group"
+                      >
+                        <span className="material-symbols-outlined text-orange-400 text-3xl mb-4 group-hover:scale-110 transition-transform">brush</span>
+                        <h4 className="text-base font-bold text-white mb-1">Draw Together</h4>
+                        <p className="text-xs text-stone-400 leading-relaxed">Sketch turn-based canvas paintings or fun doodles.</p>
+                      </button>
+
+                      {/* Grid Item 3: Plan a Date */}
+                      <button 
+                        onClick={() => setActiveActivityModal('date_planner')}
+                        className="glass-card flex flex-col items-start text-left p-6 rounded-3xl border border-white/10 bg-stone-850/20 hover:bg-stone-800/20 transition-all cursor-pointer group"
+                      >
+                        <span className="material-symbols-outlined text-orange-400 text-3xl mb-4 group-hover:scale-110 transition-transform">calendar_today</span>
+                        <h4 className="text-base font-bold text-white mb-1">Plan a Date</h4>
+                        <p className="text-xs text-stone-400 leading-relaxed">Shared calendar itinerary, checklists, and ticking countdowns.</p>
+                      </button>
+
+                      {/* Grid Item 4: Rituals Checklist */}
+                      <button 
+                        onClick={() => setCurrentView("daily")}
+                        className="glass-card flex flex-col items-start text-left p-6 rounded-3xl border border-white/10 bg-stone-850/20 hover:bg-stone-800/20 transition-all cursor-pointer group"
+                      >
+                        <span className="material-symbols-outlined text-orange-400 text-3xl mb-4 group-hover:scale-110 transition-transform">auto_awesome</span>
+                        <h4 className="text-base font-bold text-white mb-1">Connection Rituals</h4>
+                        <p className="text-xs text-stone-400 leading-relaxed">Answer daily reflection prompts and complete challenges.</p>
                       </button>
                     </div>
-                  </section>
+                  </div>
+
+                  {/* Heart / Touch Button Nudge */}
+                  <div className="flex flex-col items-center justify-center py-8 px-6 bg-stone-850/20 border border-white/10 rounded-3xl text-center relative overflow-hidden">
+                    <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                    <h3 className="text-base font-bold text-white mb-1">Send Instant Touch</h3>
+                    <p className="text-xs text-stone-400 mb-6 max-w-sm">Tap the heart to send a silent haptic ping of love and nudge your partner in real-time.</p>
+                    
+                    <button 
+                      onClick={handleHeartTouch}
+                      className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 shadow-[0_0_20px_rgba(234,88,12,0.4)] hover:shadow-[0_0_30px_rgba(234,88,12,0.6)] flex items-center justify-center border border-white/20 transition-all hover:scale-105 active:scale-95 cursor-pointer relative group"
+                    >
+                      <span className="material-symbols-outlined text-white text-3xl animate-pulse fill-current">favorite</span>
+                      <span className="absolute inset-0 rounded-full border border-orange-400 animate-ping opacity-75 group-hover:animation-duration-1000"></span>
+                    </button>
+                  </div>
 
                   {/* Mood Check-In */}
-                  <div className="glass-card mood-widget rounded-[32px] p-8">
+                  <div className="glass-card mood-widget rounded-3xl p-6 border border-white/10 bg-stone-850/20">
                     <div>
-                      <h3 className="text-lg font-bold">How are you feeling today?</h3>
-                      <p className="text-sm text-on-surface-variant mb-4">Update your mood accent in our private space.</p>
+                      <h3 className="text-base font-bold text-white">How are you feeling today?</h3>
+                      <p className="text-xs text-stone-400 mb-4">Set your mood accent color in our shared space.</p>
                     </div>
 
-                    <div className="mood-options-list flex flex-wrap gap-2.5">
+                    <div className="mood-options-list flex flex-wrap gap-2">
                       {[
                         { emoji: "😊", label: "Great", activeClass: "active-mood-great" },
                         { emoji: "🙂", label: "Good", activeClass: "active-mood-good" },
@@ -1022,15 +1380,67 @@ export default function ClientPage() {
                       ].map((m) => (
                         <button
                           key={m.label}
-                          className={`mood-btn flex items-center gap-2 px-4 py-2.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/15 text-sm transition-all duration-200 ${currentUser.mood === m.emoji ? m.activeClass : ""}`}
+                          className={`mood-btn flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-stone-900/50 hover:bg-white/10 text-xs transition-all duration-200 cursor-pointer ${currentUser.mood === m.emoji ? m.activeClass : ""}`}
                           onClick={() => handleMoodSelect(m.emoji, m.label)}
                         >
-                          <span className="text-lg">{m.emoji}</span>
-                          <span className="font-semibold text-xs">{m.label}</span>
+                          <span>{m.emoji}</span>
+                          <span className="font-semibold">{m.label}</span>
                         </button>
                       ))}
                     </div>
                   </div>
+
+                  {/* Feed: Shared gallery and updates */}
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-4 pl-1">Our Sanctuary Feed</h3>
+                    <div className="space-y-4">
+                      {currentDrawing && (
+                        <div className="p-5 bg-stone-900/40 rounded-2xl border border-white/10 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="material-symbols-outlined text-orange-400 text-sm">brush</span>
+                              <span className="text-xs font-bold text-white">Canvas Artwork Shared</span>
+                            </div>
+                            <span className="text-[10px] text-stone-500">{new Date(currentDrawing.timestamp).toLocaleDateString()}</span>
+                          </div>
+                          <div className="w-full bg-stone-950 rounded-xl overflow-hidden border border-white/5 flex justify-center p-4">
+                            <img src={currentDrawing.drawingDataUrl} alt="Shared canvas artwork" className="max-h-[220px] object-contain" />
+                          </div>
+                        </div>
+                      )}
+
+                      {touchPings.length > 0 && (
+                        <div className="p-4 bg-stone-900/40 rounded-2xl border border-white/10 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-rose-400 text-sm fill-current">favorite</span>
+                            <span className="text-xs font-semibold text-stone-300">
+                              <strong className="text-white">{touchPings[touchPings.length - 1].senderName}</strong> sent a cozy heart touch ping.
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-stone-500">{new Date(touchPings[touchPings.length - 1].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      )}
+
+                      {loveLetters.length > 0 && (
+                        <div className="p-4 bg-stone-900/40 rounded-2xl border border-white/10 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-orange-400 text-sm">drafts</span>
+                            <span className="text-xs font-semibold text-stone-300">
+                              <strong className="text-white">{loveLetters[loveLetters.length - 1].senderName}</strong> sealed a digital note in the mailbox.
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-stone-500">{new Date(loveLetters[loveLetters.length - 1].timestamp).toLocaleDateString()}</span>
+                        </div>
+                      )}
+
+                      {(!currentDrawing && touchPings.length === 0 && loveLetters.length === 0) && (
+                        <div className="p-8 bg-stone-800/10 border border-dashed border-white/10 rounded-2xl text-center text-xs text-stone-500">
+                          No feed posts yet. Send a heart ping, draw a canvas, or write a love letter to create shared feed moments.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                 </div>
 
                 {/* Right Column / Bento Growth Metrics */}
@@ -1081,6 +1491,334 @@ export default function ClientPage() {
                 </div>
 
               </div>
+            </section>
+          )}
+
+          {/* VIEW: PRIVATE PARTNER DIARY */}
+          {currentView === "diary" && currentSpace && (
+            <section className="view-container active-view w-full max-w-[650px] mx-auto py-6 px-4 md:py-8 md:px-6 relative pb-32">
+              
+              {/* Top App Bar */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+                {/* Left: Back Home pill */}
+                <button 
+                  onClick={() => setCurrentView("home")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800/60 hover:bg-stone-850/80 border border-white/10 rounded-full text-xs font-bold text-stone-300 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[14px]">arrow_back_ios</span>
+                  <span>Home</span>
+                </button>
+
+                {/* Center: Title */}
+                <div className="text-center">
+                  <span className="text-[10px] tracking-[0.2em] font-bold text-stone-400 uppercase">Diary</span>
+                </div>
+
+                {/* Right: Search button toggle */}
+                <button 
+                  onClick={() => setDiarySearchOpen(!diarySearchOpen)}
+                  className={`p-1.5 rounded-full border bg-transparent cursor-pointer transition-all ${diarySearchOpen ? 'border-orange-400 text-orange-350' : 'border-transparent text-stone-400 hover:text-white'}`}
+                >
+                  <span className="material-symbols-outlined text-[20px]">search</span>
+                </button>
+              </div>
+
+              {/* Toggled Search Input Bar */}
+              {diarySearchOpen && (
+                <div className="mb-6 animate-fade-in-down">
+                  <input
+                    type="text"
+                    className="input-field w-full text-sm py-2.5 px-4"
+                    placeholder="Search notes, hints, or category entries..."
+                    value={diarySearchQuery}
+                    onChange={(e) => setDiarySearchQuery(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {/* Header Privacy Card */}
+              <div className="p-6 bg-gradient-to-br from-stone-900 to-stone-950 border border-white/10 rounded-[24px] shadow-lg flex flex-col items-center text-center relative overflow-hidden mb-6">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-orange-400/5 rounded-full blur-2xl pointer-events-none"></div>
+                
+                {/* Partner Avatar Circle */}
+                <div className="w-16 h-16 rounded-full bg-amber-100/10 border-2 border-[#D9885C] flex items-center justify-center font-cursive text-amber-200 text-3xl font-bold shadow-inner mb-3">
+                  {partnerUser ? partnerUser.name[0].toUpperCase() : "?"}
+                </div>
+
+                {/* Cursive Name Title */}
+                <h3 className="font-cursive text-2xl text-amber-250 leading-tight">
+                  {partnerUser ? partnerUser.name : "Your Partner"}
+                </h3>
+                
+                {/* Privacy Badge tagline */}
+                <span className="text-[9px] font-bold tracking-[0.15em] text-stone-400 uppercase mt-1.5 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[11px] text-[#D9885C]">lock</span>
+                  Only you can see this
+                </span>
+              </div>
+
+              {/* Horizontal Category Filter Chips */}
+              <div className="diary-category-chips-row mb-6 select-none">
+                {["All", "Things I Notice", "Moments", "Ideas", "Hints", "Remember"].map((cat) => {
+                  const isActive = diaryActiveFilter === cat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setDiaryActiveFilter(cat)}
+                      className={`btn-diary-chip ${isActive ? 'active' : ''}`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Notes List Rendering */}
+              {(() => {
+                // Filter entries based on chip selection & search query
+                const filtered = diaryEntries.filter((entry) => {
+                  const matchesCategory = diaryActiveFilter === "All" || entry.category === diaryActiveFilter;
+                  const matchesSearch = !diarySearchQuery || 
+                    entry.title.toLowerCase().includes(diarySearchQuery.toLowerCase()) || 
+                    entry.content.toLowerCase().includes(diarySearchQuery.toLowerCase()) ||
+                    entry.category.toLowerCase().includes(diarySearchQuery.toLowerCase());
+                  return matchesCategory && matchesSearch;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    /* Empty State View */
+                    <div className="flex flex-col items-center justify-center text-center py-12 px-6 bg-stone-900/15 border border-dashed border-white/10 rounded-[28px] mt-2 select-none">
+                      <span className="material-symbols-outlined text-stone-500 text-4xl mb-4">book</span>
+                      <h4 className="text-lg font-bold text-white mb-2">Nothing here yet</h4>
+                      <p className="text-xs text-stone-400 leading-relaxed mb-6 max-w-sm">
+                        This is your private space to notice things about {partnerUser ? partnerUser.name : "your partner"} — moments, stories, hints they drop, things you love.
+                      </p>
+                      <button 
+                        onClick={() => setDiaryModalOpen(true)}
+                        className="btn-diary-cta font-body-md"
+                      >
+                        Add first entry
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {filtered.map((entry) => (
+                      <div key={entry.id} className="p-5 bg-stone-900/30 border border-white/10 rounded-2xl relative shadow-md group">
+                        
+                        {/* Delete Button */}
+                        <button 
+                          onClick={() => handleDeleteDiaryEntry(entry.id)}
+                          className="absolute top-4 right-4 text-stone-500 hover:text-red-400 text-lg bg-transparent border-0 cursor-pointer transition-colors"
+                        >
+                          &times;
+                        </button>
+
+                        {/* Tag Category & Date Badge */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#D9885C]/15 border border-[#D9885C]/35 text-[9px] font-bold text-orange-300 uppercase tracking-wide">
+                            {entry.category}
+                          </span>
+                          <span className="text-[10px] text-stone-500">{new Date(entry.date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+                        </div>
+
+                        {/* Title */}
+                        <h4 className="text-base font-bold text-white mb-2 leading-snug">{entry.title}</h4>
+
+                        {/* Content text */}
+                        <p className="text-xs text-stone-300 leading-relaxed whitespace-pre-wrap">{entry.content}</p>
+
+                        {/* Optional Image Preview */}
+                        {entry.imageUrl && (
+                          <div className="mt-4 rounded-xl overflow-hidden border border-white/5 max-h-[200px] flex justify-center bg-black/10">
+                            <img 
+                              src={entry.imageUrl} 
+                              alt="Note attachment" 
+                              className="object-contain max-h-[200px] cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => setActiveImagePreview(entry.imageUrl)}
+                            />
+                          </div>
+                        )}
+
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Floating Action Button (FAB) */}
+              <button
+                onClick={() => setDiaryModalOpen(true)}
+                className="fixed bottom-24 right-6 w-14 h-14 rounded-full flex items-center justify-center fab-terracotta border border-white/15 z-40"
+              >
+                <span className="material-symbols-outlined text-2xl font-bold">add</span>
+              </button>
+
+            </section>
+          )}
+
+          {/* VIEW: COUPLES GAME SCOREBOARD */}
+          {currentView === "scoreboard" && currentSpace && (
+            <section className="view-container active-view w-full max-w-[600px] mx-auto py-6 px-4 md:py-8 md:px-6 select-none bg-scoreboard-oled min-h-[90vh] rounded-[24px] border border-white/5 shadow-2xl relative pb-24">
+              
+              {/* Top App Bar */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+                {/* Left: Circular back button */}
+                <button 
+                  onClick={() => setCurrentView("home")}
+                  className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-stone-300 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                </button>
+
+                {/* Center: Bold title */}
+                <h3 className="text-lg font-bold text-white tracking-wide">Scoreboard</h3>
+
+                {/* Right: Reset icon button */}
+                <button 
+                  onClick={handleResetScores}
+                  className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-stone-300 hover:text-red-400 transition-all cursor-pointer"
+                  title="Reset all game scores"
+                >
+                  <span className="material-symbols-outlined text-[18px]">refresh</span>
+                </button>
+              </div>
+
+              {/* Overall Score Card (Top Summary Card) */}
+              {(() => {
+                const totalUserWins = gameScores.reduce((acc, game) => acc + (game.userScore || 0), 0);
+                const totalPartnerWins = gameScores.reduce((acc, game) => acc + (game.partnerScore || 0), 0);
+                
+                let matchStatusText = "Level pegging";
+                let statusEmoji = "🤝";
+                if (totalUserWins > totalPartnerWins) {
+                  matchStatusText = "You're ahead";
+                  statusEmoji = "🏆";
+                } else if (totalPartnerWins > totalUserWins) {
+                  matchStatusText = "Partner is ahead";
+                  statusEmoji = "👑";
+                }
+
+                return (
+                  <div className="bg-scoreboard-card p-6 rounded-[24px] shadow-lg mb-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-400/5 rounded-full blur-2xl pointer-events-none"></div>
+                    
+                    <div className="grid grid-cols-3 items-center text-center">
+                      
+                      {/* Left: User */}
+                      <div className="flex flex-col items-center">
+                        <div className="w-12 h-12 rounded-full bg-amber-100/10 border-2 border-[#E58B58] flex items-center justify-center font-bold text-[#E58B58] text-lg shadow-inner mb-2">
+                          {currentUser ? currentUser.name[0].toUpperCase() : "Y"}
+                        </div>
+                        <span className="text-3xl font-extrabold text-white tracking-tight">{totalUserWins}</span>
+                        <span className="text-[10px] text-stone-500 font-bold uppercase tracking-wider mt-1">You</span>
+                      </div>
+
+                      {/* Center: Status */}
+                      <div className="flex flex-col items-center justify-center px-2">
+                        <span className="text-3xl mb-1">{statusEmoji}</span>
+                        <span className="text-[11px] font-bold text-stone-300 leading-tight uppercase tracking-wide">
+                          {matchStatusText}
+                        </span>
+                        <span className="text-[9px] text-stone-500 font-medium mt-1">Total Wins</span>
+                      </div>
+
+                      {/* Right: Partner */}
+                      <div className="flex flex-col items-center">
+                        <div className="w-12 h-12 rounded-full bg-blue-100/10 border-2 border-[#6C8EEF] flex items-center justify-center font-bold text-[#6C8EEF] text-lg shadow-inner mb-2">
+                          {partnerUser ? partnerUser.name[0].toUpperCase() : "P"}
+                        </div>
+                        <span className="text-3xl font-extrabold text-white tracking-tight">{totalPartnerWins}</span>
+                        <span className="text-[10px] text-stone-500 font-bold uppercase tracking-wider mt-1">Partner</span>
+                      </div>
+
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Section Header */}
+              <div className="mb-4">
+                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">By Game</span>
+              </div>
+
+              {/* Individual Game Score Cards (Scrollable List) */}
+              <div className="space-y-4">
+                {gameScores.map((game) => {
+                  const totalPlays = (game.userScore || 0) + (game.partnerScore || 0) + (game.draws || 0);
+                  const playStatusText = totalPlays > 0 ? `${totalPlays} games played` : "No games yet";
+
+                  return (
+                    <div key={game.gameId} className="bg-scoreboard-card p-5 rounded-2xl shadow-md border border-white/5 flex flex-col gap-4">
+                      
+                      {/* Top Info Row */}
+                      <div className="flex items-center gap-3">
+                        {/* Game Icon Badge */}
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white text-base shadow-sm"
+                          style={{ backgroundColor: `${game.color || '#E58B58'}20`, border: `1px solid ${game.color || '#E58B58'}30` }}
+                        >
+                          <span className="material-symbols-outlined text-[20px]" style={{ color: game.color }}>
+                            {game.icon || 'sports_esports'}
+                          </span>
+                        </div>
+
+                        {/* Title & Play count */}
+                        <div className="flex-1">
+                          <h4 className="text-sm font-bold text-white leading-snug">{game.name}</h4>
+                          <span className="text-[10px] text-[#8A847F] font-semibold">{playStatusText}</span>
+                        </div>
+                      </div>
+
+                      {/* 3-Column Score Breakdown & win counters */}
+                      <div className="grid grid-cols-3 gap-2 bg-black/15 p-3 rounded-xl border border-white/5">
+                        
+                        {/* Left: You */}
+                        <div className="flex flex-col items-center justify-between text-center gap-1.5 border-r border-white/5">
+                          <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wider">You ({currentUser ? currentUser.name[0].toUpperCase() : 'Y'})</span>
+                          <span className="text-xl font-bold text-[#E58B58]">{game.userScore || 0}</span>
+                          <button 
+                            onClick={() => handleIncrementScore(game.gameId, 'user')}
+                            className="btn-score-adjust btn-score-adjust-user mt-1 select-none"
+                          >
+                            +1 Win
+                          </button>
+                        </div>
+
+                        {/* Center: Draws */}
+                        <div className="flex flex-col items-center justify-between text-center gap-1.5 border-r border-white/5">
+                          <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wider">Draws</span>
+                          <span className="text-xl font-bold text-[#8A847F]">{game.draws || 0}</span>
+                          <button 
+                            onClick={() => handleIncrementScore(game.gameId, 'draw')}
+                            className="btn-score-adjust mt-1 select-none"
+                          >
+                            +1 Draw
+                          </button>
+                        </div>
+
+                        {/* Right: Partner */}
+                        <div className="flex flex-col items-center justify-between text-center gap-1.5">
+                          <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wider">Partner ({partnerUser ? partnerUser.name[0].toUpperCase() : 'P'})</span>
+                          <span className="text-xl font-bold text-[#6C8EEF]">{game.partnerScore || 0}</span>
+                          <button 
+                            onClick={() => handleIncrementScore(game.gameId, 'partner')}
+                            className="btn-score-adjust btn-score-adjust-partner mt-1 select-none"
+                          >
+                            +1 Win
+                          </button>
+                        </div>
+
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+
             </section>
           )}
 
@@ -1671,6 +2409,24 @@ export default function ClientPage() {
               <span className="font-label-sm text-[10px] font-bold">Timeline</span>
             </button>
 
+            {/* Diary */}
+            <button 
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "diary" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
+              onClick={() => setCurrentView("diary")}
+            >
+              <span className="material-symbols-outlined mb-1">book</span>
+              <span className="font-label-sm text-[10px] font-bold">Diary</span>
+            </button>
+
+            {/* Scoreboard */}
+            <button 
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "scoreboard" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
+              onClick={() => setCurrentView("scoreboard")}
+            >
+              <span className="material-symbols-outlined mb-1">leaderboard</span>
+              <span className="font-label-sm text-[10px] font-bold">Scoreboard</span>
+            </button>
+
             {/* Profile (Settings) */}
             <button 
               className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "profile" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
@@ -1800,7 +2556,425 @@ export default function ClientPage() {
           </div>
         </div>
       </div>
-      
+
+      {/* --- PREMIUM COMPONENT MODALS --- */}
+
+      {/* 1. Draw Together Modal */}
+      {activeActivityModal === "draw" && (
+        <div className="modal-overlay flex" onClick={() => setActiveActivityModal(null)}>
+          <div className="modal-content glass-card rounded-[28px] max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close text-stone-400 hover:text-white" onClick={() => setActiveActivityModal(null)}>&times;</button>
+            <h3 className="text-xl font-bold font-cursive text-orange-200 mb-4">Draw Together Canvas</h3>
+            <DrawingCanvas onSave={(dataUrl) => { handleSaveCanvasDrawing(dataUrl); setActiveActivityModal(null); }} />
+          </div>
+        </div>
+      )}
+
+      {/* 2. Love Letter: Write Modal */}
+      {activeActivityModal === "love_letter_write" && (
+        <div className="modal-overlay flex" onClick={() => setActiveActivityModal(null)}>
+          <div className="modal-content glass-card rounded-[28px] max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close text-stone-400 hover:text-white" onClick={() => setActiveActivityModal(null)}>&times;</button>
+            <h3 className="text-xl font-bold font-cursive text-orange-200 mb-2">Write a Love Letter</h3>
+            <p className="text-xs text-stone-400 mb-4">Seal a private note for your partner. They can open it from their mailbox.</p>
+            
+            <div className="space-y-4">
+              <textarea 
+                className="input-field w-full h-32 font-cursive text-lg leading-relaxed text-orange-100 placeholder:text-stone-600" 
+                placeholder="Dearest..." 
+                value={loveLetterInput} 
+                onChange={(e) => setLoveLetterInput(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <button className="btn btn-glass flex-1 text-xs" onClick={() => setActiveActivityModal('love_letter_list')}>Open Mailbox</button>
+                <button className="btn btn-primary flex-1 btn-terracotta text-xs" onClick={handleSendLetter}>Seal & Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Love Letter: Inbox List Modal */}
+      {activeActivityModal === "love_letter_list" && (
+        <div className="modal-overlay flex" onClick={() => setActiveActivityModal(null)}>
+          <div className="modal-content glass-card rounded-[28px] max-w-md p-6 overflow-y-auto max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close text-stone-400 hover:text-white" onClick={() => setActiveActivityModal(null)}>&times;</button>
+            <h3 className="text-xl font-bold font-cursive text-orange-200 mb-4">Our Sealed Mailbox ({loveLetters.length})</h3>
+            
+            <div className="space-y-4">
+              {loveLetters.length === 0 ? (
+                <p className="text-xs text-stone-500 text-center py-6">Mailbox is currently empty.</p>
+              ) : (
+                loveLetters.map((l) => (
+                  <div key={l.id} className="p-4 bg-stone-900/50 rounded-2xl border border-white/10 space-y-2 relative overflow-hidden">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-orange-350">From: {l.senderName}</span>
+                      <span className="text-[10px] text-stone-500">{new Date(l.timestamp).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-sm font-cursive text-stone-200 leading-relaxed whitespace-pre-wrap">{l.message}</p>
+                  </div>
+                ))
+              )}
+              <button className="btn btn-glass w-full text-xs mt-2" onClick={() => setActiveActivityModal('love_letter_write')}>Write New Letter</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Plan a Date Countdown Modal */}
+      {activeActivityModal === "date_planner" && (
+        <div className="modal-overlay flex" onClick={() => setActiveActivityModal(null)}>
+          <div className="modal-content glass-card rounded-[28px] max-w-md p-6 overflow-y-auto max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close text-stone-400 hover:text-white" onClick={() => setActiveActivityModal(null)}>&times;</button>
+            <h3 className="text-xl font-bold font-cursive text-orange-200 mb-2">Our Date Planner</h3>
+            <p className="text-xs text-stone-400 mb-4 font-body-md">Schedule dates, view countdowns, and check off shared bucket lists.</p>
+
+            {/* Create form */}
+            <div className="p-4 bg-stone-900/40 rounded-2xl border border-white/5 space-y-3 mb-6">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-orange-300">Create New Date Plan</h4>
+              <div className="space-y-2">
+                <input type="text" className="input-field w-full py-2 px-3 text-xs" placeholder="Date Title (e.g. Picnic, Movie)" value={dateTitle} onChange={(e) => setDateTitle(e.target.value)} />
+                <input type="datetime-local" className="input-field w-full py-2 px-3 text-xs" value={dateVal} onChange={(e) => setDateVal(e.target.value)} />
+                <input type="text" className="input-field w-full py-2 px-3 text-xs" placeholder="Location" value={dateLocation} onChange={(e) => setDateLocation(e.target.value)} />
+                <textarea className="input-field w-full h-16 py-2 px-3 text-xs" placeholder="Itinerary details" value={dateDesc} onChange={(e) => setDateDesc(e.target.value)} />
+                <button className="btn btn-primary w-full py-2 text-xs btn-terracotta" onClick={handleSaveDate}>Add Date Plan</button>
+              </div>
+            </div>
+
+            {/* Date list */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-stone-400 pl-1">Scheduled Plans ({datePlans.length})</h4>
+              {datePlans.length === 0 ? (
+                <p className="text-xs text-stone-500 text-center py-4">No dates planned yet.</p>
+              ) : (
+                datePlans.map((d) => (
+                  <div key={d.id} className="p-4 bg-stone-900/60 rounded-2xl border border-white/10 space-y-3 relative">
+                    <button 
+                      onClick={() => handleDeleteDate(d.id)}
+                      className="absolute top-2.5 right-2.5 text-stone-500 hover:text-rose-400 text-xl bg-transparent border-0 cursor-pointer"
+                    >
+                      &times;
+                    </button>
+                    <div>
+                      <h5 className="text-sm font-bold text-white leading-tight">{d.title}</h5>
+                      <p className="text-[10px] text-orange-300 mt-1">{new Date(d.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })} • {d.location}</p>
+                      {d.description && <p className="text-xs text-stone-450 mt-1 leading-normal">{d.description}</p>}
+                    </div>
+
+                    {/* countdown */}
+                    <DateCountdown targetDate={d.dateTime} />
+
+                    {/* bucket checklist */}
+                    <div className="space-y-1.5 pt-2 border-t border-white/5">
+                      <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">Date Checklist</span>
+                      {d.bucketList?.map((item) => (
+                        <label key={item.id} className="flex items-center gap-2 text-xs text-stone-300 cursor-pointer select-none">
+                          <input 
+                            type="checkbox" 
+                            checked={item.done} 
+                            onChange={() => handleToggleDateItem(d.id, item.id)}
+                            className="rounded bg-stone-900 border-white/15 text-orange-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                          />
+                          <span className={item.done ? "line-through text-stone-500" : ""}>{item.text}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Private Diary Note Creation Modal (Bottom Sheet style) */}
+      {diaryModalOpen && (
+        <div className="modal-overlay flex items-end sm:items-center" onClick={() => setDiaryModalOpen(false)}>
+          <div className="modal-content glass-card rounded-t-[32px] sm:rounded-[28px] max-w-md p-6 overflow-y-auto max-h-[85vh] w-full" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close text-stone-400 hover:text-white" onClick={() => setDiaryModalOpen(false)}>&times;</button>
+            
+            <h3 className="text-xl font-bold font-cursive text-orange-200 mb-1">Add Diary Entry</h3>
+            <p className="text-xs text-stone-400 mb-5 font-body-md">Write down notes, hints, or memories. This stays 100% private to you.</p>
+
+            <div className="space-y-4">
+              {/* Category Selector */}
+              <div className="input-group">
+                <label className="input-label text-[10px] uppercase tracking-wider text-stone-400 font-bold">Category Tag</label>
+                <div className="flex flex-wrap gap-2 mt-1 select-none">
+                  {["Things I Notice", "Moments", "Ideas", "Hints", "Remember"].map((cat) => {
+                    const isSelected = diaryCategoryInput === cat;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setDiaryCategoryInput(cat)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                          isSelected 
+                            ? "bg-[#D9885C]/20 border-[#D9885C] text-orange-300" 
+                            : "bg-white/5 border-white/10 text-stone-400 hover:text-white"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Title input */}
+              <div className="input-group">
+                <label className="input-label text-[10px] uppercase tracking-wider text-stone-400 font-bold">Title</label>
+                <input 
+                  type="text" 
+                  className="input-field w-full py-2 px-3 text-xs" 
+                  placeholder="e.g. Favorite snacks, Sunset walk details" 
+                  value={diaryTitleInput} 
+                  onChange={(e) => setDiaryTitleInput(e.target.value)} 
+                />
+              </div>
+
+              {/* Date Input */}
+              <div className="input-group">
+                <label className="input-label text-[10px] uppercase tracking-wider text-stone-400 font-bold">Note Date (Optional)</label>
+                <input 
+                  type="date" 
+                  className="input-field w-full py-2 px-3 text-xs" 
+                  value={diaryDateInput} 
+                  onChange={(e) => setDiaryDateInput(e.target.value)} 
+                />
+              </div>
+
+              {/* Note Content Textarea */}
+              <div className="input-group">
+                <label className="input-label text-[10px] uppercase tracking-wider text-stone-400 font-bold">Diary Note</label>
+                <textarea 
+                  className="input-field w-full h-28 py-2.5 px-3 text-xs leading-relaxed" 
+                  placeholder="Write your private notes here..." 
+                  value={diaryContentInput} 
+                  onChange={(e) => setDiaryContentInput(e.target.value)} 
+                />
+              </div>
+
+              {/* Optional Photo Attachment */}
+              <div className="input-group">
+                <label className="input-label text-[10px] uppercase tracking-wider text-stone-400 font-bold">Photo Attachment (Optional)</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleDiaryImageUpload} 
+                  className="hidden" 
+                  id="diary-image-upload" 
+                />
+                
+                {diaryImageInput ? (
+                  <div className="relative w-full h-24 rounded-xl overflow-hidden border border-white/10 bg-black/10 mt-1 flex justify-center">
+                    <img src={diaryImageInput} alt="Uploaded attachment" className="h-full object-contain" />
+                    <button 
+                      onClick={() => setDiaryImageInput(null)} 
+                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center cursor-pointer border border-white/10"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ) : (
+                  <label 
+                    htmlFor="diary-image-upload" 
+                    className="mt-1 flex items-center justify-center gap-2 w-full py-3 bg-white/5 border border-dashed border-white/10 rounded-xl cursor-pointer hover:bg-white/10 text-xs text-stone-400 hover:text-white transition-all select-none"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">add_photo_alternate</span>
+                    Upload Photo (Max 2MB)
+                  </label>
+                )}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button 
+                  className="btn btn-glass flex-1 text-xs" 
+                  onClick={() => setDiaryModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="btn btn-primary flex-1 btn-terracotta text-xs" 
+                  onClick={handleSaveDiaryEntry}
+                >
+                  Save Entry
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Floating Hearts Overlay */}
+      {floatingHearts.map((heart) => (
+        <div
+          key={heart.id}
+          className="fixed pointer-events-none text-red-500 animate-float-heart z-[100] text-3xl"
+          style={{ left: `${heart.x}vw`, bottom: `${heart.y}vh` }}
+        >
+          ❤️
+        </div>
+      ))}
+
     </div>
   );
 }
+
+// Helper Canvas Drawing Widget
+const DrawingCanvas = ({ onSave }) => {
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [color, setColor] = useState("#FDBA74");
+  const [thickness, setThickness] = useState(4);
+
+  const startDrawing = (e) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+    
+    // Support mouse and touch
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+    
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = thickness;
+    ctx.lineCap = "round";
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const handleSave = () => {
+    const canvas = canvasRef.current;
+    const dataUrl = canvas.toDataURL();
+    onSave(dataUrl);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center gap-4">
+        {/* Colors presets */}
+        <div className="flex gap-2">
+          {["#FDBA74", "#EA580C", "#F5F5F4", "#ffb2c1", "#8a4fff", "#00e676"].map((c) => (
+            <button
+              key={c}
+              className={`w-7 h-7 rounded-full border-2 ${color === c ? 'border-white' : 'border-transparent'} cursor-pointer`}
+              style={{ backgroundColor: c }}
+              onClick={() => setColor(c)}
+            />
+          ))}
+        </div>
+        
+        {/* Thickness */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-stone-400 font-bold uppercase">Brush:</span>
+          <input
+            type="range"
+            min="1"
+            max="15"
+            value={thickness}
+            onChange={(e) => setThickness(parseInt(e.target.value))}
+            className="w-20 accent-orange-400 cursor-pointer"
+          />
+        </div>
+      </div>
+
+      <canvas
+        ref={canvasRef}
+        width={380}
+        height={280}
+        className="drawing-canvas w-full max-w-full"
+        onMouseDown={startDrawing}
+        onMouseMove={draw}
+        onMouseUp={stopDrawing}
+        onMouseLeave={stopDrawing}
+        onTouchStart={startDrawing}
+        onTouchMove={draw}
+        onTouchEnd={stopDrawing}
+      />
+
+      <div className="flex gap-3">
+        <button className="btn btn-glass flex-1 text-xs" onClick={clearCanvas}>Clear</button>
+        <button className="btn btn-primary flex-1 btn-terracotta text-xs" onClick={handleSave}>Share</button>
+      </div>
+    </div>
+  );
+};
+
+// Helper Live Countdown Widget
+const DateCountdown = ({ targetDate }) => {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const difference = +new Date(targetDate) - +new Date();
+      let left = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+      if (difference > 0) {
+        left = {
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60)
+        };
+      }
+      setTimeLeft(left);
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  return (
+    <div className="grid grid-cols-4 gap-2 text-center mt-2">
+      <div className="bg-black/30 p-2 rounded-xl border border-white/5">
+        <div className="text-base font-bold text-orange-400">{timeLeft.days}</div>
+        <div className="text-[9px] text-stone-500 uppercase font-bold tracking-wider">Days</div>
+      </div>
+      <div className="bg-black/30 p-2 rounded-xl border border-white/5">
+        <div className="text-base font-bold text-orange-400">{timeLeft.hours}</div>
+        <div className="text-[9px] text-stone-500 uppercase font-bold tracking-wider">Hrs</div>
+      </div>
+      <div className="bg-black/30 p-2 rounded-xl border border-white/5">
+        <div className="text-base font-bold text-orange-400">{timeLeft.minutes}</div>
+        <div className="text-[9px] text-stone-500 uppercase font-bold tracking-wider">Mins</div>
+      </div>
+      <div className="bg-black/30 p-2 rounded-xl border border-white/5">
+        <div className="text-base font-bold text-orange-400">{timeLeft.seconds}</div>
+        <div className="text-[9px] text-stone-500 uppercase font-bold tracking-wider">Secs</div>
+      </div>
+    </div>
+  );
+};

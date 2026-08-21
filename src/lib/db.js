@@ -13,7 +13,13 @@ export const DB = {
     MEMORIES: "bu_memories",
     ACTIVE_USER: "bu_active_user_id",
     SEED_DONE: "bu_seed_completed_v1",
-    CUSTOM_QUESTIONS: "bu_custom_questions"
+    CUSTOM_QUESTIONS: "bu_custom_questions",
+    LOVE_LETTERS: "bu_love_letters",
+    DRAWINGS: "bu_drawings",
+    DATE_PLANS: "bu_date_plans",
+    TOUCH_PINGS: "bu_touch_pings",
+    DIARY: "bu_diary_entries",
+    GAME_SCORES: "bu_game_scores"
   },
 
   get(key) {
@@ -150,6 +156,79 @@ export const DB = {
       }
     ];
     this.set(this.KEYS.MEMORIES, initialMemories);
+
+    const initialLetters = [
+      {
+        id: "l_1",
+        spaceId: "s_demo",
+        senderId: "u_bob",
+        senderName: "Bob",
+        message: "Hey Alice, just wanted to write a quick note to say how grateful I am for our space together. Seeing your daily updates always brightens my day! ❤️",
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+        sealed: false
+      }
+    ];
+    this.set(this.KEYS.LOVE_LETTERS, initialLetters);
+
+    const initialDrawings = [
+      {
+        spaceId: "s_demo",
+        drawingDataUrl: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><circle cx='50' cy='50' r='40' stroke='orange' stroke-width='4' fill='none'/></svg>",
+        senderId: "u_alice",
+        timestamp: new Date().toISOString()
+      }
+    ];
+    this.set(this.KEYS.DRAWINGS, initialDrawings);
+
+    const initialDates = [
+      {
+        id: "d_1",
+        spaceId: "s_demo",
+        title: "Cozy Picnic in the Park",
+        dateTime: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
+        location: "Central Gardens",
+        description: "Let's pack some cheese, fruit, and sandwiches. I'll bring the blanket and some vinyl speakers!",
+        bucketList: [
+          { id: 1, text: "Try the bakery's sourdough bread", done: true },
+          { id: 2, text: "Take a polaroid photo together", done: false },
+          { id: 3, text: "Watch the sunset from the hill", done: false }
+        ]
+      }
+    ];
+    this.set(this.KEYS.DATE_PLANS, initialDates);
+    this.set(this.KEYS.TOUCH_PINGS, []);
+
+    const initialDiary = [
+      {
+        id: "diary_1",
+        spaceId: "s_demo",
+        userId: "u_alice",
+        title: "Bob's Favorite Coffee Order ☕",
+        content: "Bob mentioned he loves Oat Milk Lattes with exactly half a pump of vanilla syrup. Needs to be extra hot! Keep this in mind for surprise morning deliveries.",
+        category: "Remember",
+        date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString().split('T')[0],
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString()
+      },
+      {
+        id: "diary_2",
+        spaceId: "s_demo",
+        userId: "u_alice",
+        title: "Sunset Walk Surprise 🌅",
+        content: "We walked near the lake and he drops hints about wanting to visit that new botanical museum. Let's schedule it for next week's date!",
+        category: "Hints",
+        date: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString().split('T')[0],
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
+      }
+    ];
+    this.set(this.KEYS.DIARY, initialDiary);
+
+    const initialScores = [
+      { gameId: "link_four", name: "Link Four", icon: "grid_on", color: "#E58B58", userScore: 3, partnerScore: 2, draws: 1 },
+      { gameId: "word_duel", name: "Word Duel", icon: "translate", color: "#6C8EEF", userScore: 4, partnerScore: 4, draws: 2 },
+      { gameId: "spotted", name: "Spotted", icon: "visibility", color: "#A78BFA", userScore: 1, partnerScore: 2, draws: 0 },
+      { gameId: "memory", name: "Memory Match", icon: "psychology", color: "#34D399", userScore: 0, partnerScore: 0, draws: 0 }
+    ];
+    this.set(this.KEYS.GAME_SCORES, initialScores);
 
     localStorage.setItem(this.KEYS.ACTIVE_USER, "u_alice");
     localStorage.setItem(this.KEYS.SEED_DONE, "true");
@@ -463,5 +542,195 @@ export const DB = {
 
   clearCustomQuestions() {
     this.set(this.KEYS.CUSTOM_QUESTIONS, []);
+  },
+
+  // Love Letters Manager
+  getLoveLetters(spaceId) {
+    return this.get(this.KEYS.LOVE_LETTERS).filter(l => l.spaceId === spaceId);
+  },
+
+  sendLoveLetter(spaceId, senderId, senderName, message) {
+    const letters = this.get(this.KEYS.LOVE_LETTERS);
+    const newLetter = {
+      id: "l_" + Math.random().toString(36).substr(2, 9),
+      spaceId,
+      senderId,
+      senderName,
+      message,
+      timestamp: new Date().toISOString(),
+      sealed: false
+    };
+    letters.push(newLetter);
+    this.set(this.KEYS.LOVE_LETTERS, letters);
+
+    this.addMemory(spaceId, "milestone", `Love Letter sealed by ${senderName}`, `${message.substring(0, 60)}...`);
+    return newLetter;
+  },
+
+  // Collaborative Drawing Board
+  getDrawing(spaceId) {
+    const drawings = this.get(this.KEYS.DRAWINGS);
+    return drawings.find(d => d.spaceId === spaceId) || null;
+  },
+
+  saveDrawing(spaceId, senderId, drawingDataUrl) {
+    const drawings = this.get(this.KEYS.DRAWINGS);
+    const idx = drawings.findIndex(d => d.spaceId === spaceId);
+    const drawingObj = {
+      spaceId,
+      drawingDataUrl,
+      senderId,
+      timestamp: new Date().toISOString()
+    };
+    if (idx > -1) {
+      drawings[idx] = drawingObj;
+    } else {
+      drawings.push(drawingObj);
+    }
+    this.set(this.KEYS.DRAWINGS, drawings);
+
+    const users = this.get(this.KEYS.USERS);
+    const user = users.find(u => u.id === senderId);
+
+    this.addMemory(spaceId, "photo", `Canvas artwork shared by ${user ? user.name : 'partner'}`, "Shared on the Draw Together board", drawingDataUrl);
+    return drawingObj;
+  },
+
+  // Date Planner
+  getDatePlans(spaceId) {
+    return this.get(this.KEYS.DATE_PLANS).filter(d => d.spaceId === spaceId);
+  },
+
+  addDatePlan(spaceId, title, dateTime, location, description) {
+    const dates = this.get(this.KEYS.DATE_PLANS);
+    const newDate = {
+      id: "d_" + Math.random().toString(36).substr(2, 9),
+      spaceId,
+      title,
+      dateTime,
+      location,
+      description,
+      bucketList: [
+        { id: 1, text: "Take photos together", done: false },
+        { id: 2, text: "Try a new food or drink", done: false },
+        { id: 3, text: "Share a deep conversation", done: false }
+      ]
+    };
+    dates.push(newDate);
+    this.set(this.KEYS.DATE_PLANS, dates);
+
+    this.addMemory(spaceId, "milestone", `Plan a Date: ${title}`, `Scheduled for ${new Date(dateTime).toLocaleDateString()} at ${location}`);
+    return newDate;
+  },
+
+  toggleDateBucketItem(spaceId, dateId, itemId) {
+    const dates = this.get(this.KEYS.DATE_PLANS);
+    const date = dates.find(d => d.id === dateId && d.spaceId === spaceId);
+    if (date) {
+      const item = date.bucketList.find(i => i.id === itemId);
+      if (item) {
+        item.done = !item.done;
+        this.set(this.KEYS.DATE_PLANS, dates);
+      }
+    }
+  },
+
+  deleteDatePlan(spaceId, dateId) {
+    const dates = this.get(this.KEYS.DATE_PLANS);
+    const filtered = dates.filter(d => !(d.id === dateId && d.spaceId === spaceId));
+    this.set(this.KEYS.DATE_PLANS, filtered);
+  },
+
+  // Heart Touch Ping
+  getTouchPings(spaceId) {
+    return this.get(this.KEYS.TOUCH_PINGS).filter(p => p.spaceId === spaceId);
+  },
+
+  sendTouchPing(spaceId, senderId, senderName) {
+    const pings = this.get(this.KEYS.TOUCH_PINGS);
+    const newPing = {
+      spaceId,
+      senderId,
+      senderName,
+      timestamp: new Date().toISOString()
+    };
+    pings.push(newPing);
+    this.set(this.KEYS.TOUCH_PINGS, pings);
+
+    this.addMemory(spaceId, "milestone", `Heart touch sent by ${senderName}`, "Sent a glowing tap through our private sanctuary.");
+    return newPing;
+  },
+
+  // Private Partner Diary
+  getDiaryEntries(spaceId, userId) {
+    return this.get(this.KEYS.DIARY).filter(d => d.spaceId === spaceId && d.userId === userId);
+  },
+
+  addDiaryEntry(spaceId, userId, title, content, category, date, imageUrl) {
+    const entries = this.get(this.KEYS.DIARY);
+    const newEntry = {
+      id: "diary_" + Math.random().toString(36).substr(2, 9),
+      spaceId,
+      userId,
+      title,
+      content,
+      category,
+      date: date || new Date().toISOString().split('T')[0],
+      imageUrl: imageUrl || null,
+      timestamp: new Date().toISOString()
+    };
+    entries.push(newEntry);
+    this.set(this.KEYS.DIARY, entries);
+    return newEntry;
+  },
+
+  deleteDiaryEntry(spaceId, userId, entryId) {
+    const entries = this.get(this.KEYS.DIARY);
+    const filtered = entries.filter(d => !(d.id === entryId && d.spaceId === spaceId && d.userId === userId));
+    this.set(this.KEYS.DIARY, filtered);
+  },
+
+  // Couples Game Scoreboard
+  getGameScores(spaceId) {
+    let scores = this.get(this.KEYS.GAME_SCORES);
+    if (!scores || scores.length === 0) {
+      scores = [
+        { gameId: "link_four", name: "Link Four", icon: "grid_on", color: "#E58B58", userScore: 0, partnerScore: 0, draws: 0 },
+        { gameId: "word_duel", name: "Word Duel", icon: "translate", color: "#6C8EEF", userScore: 0, partnerScore: 0, draws: 0 },
+        { gameId: "spotted", name: "Spotted", icon: "visibility", color: "#A78BFA", userScore: 0, partnerScore: 0, draws: 0 },
+        { gameId: "memory", name: "Memory Match", icon: "psychology", color: "#34D399", userScore: 0, partnerScore: 0, draws: 0 }
+      ];
+      this.set(this.KEYS.GAME_SCORES, scores);
+    }
+    return scores;
+  },
+
+  updateGameScore(spaceId, gameId, type) {
+    const scores = this.getGameScores(spaceId);
+    const updated = scores.map(game => {
+      if (game.gameId === gameId) {
+        if (type === 'user') {
+          return { ...game, userScore: game.userScore + 1 };
+        } else if (type === 'partner') {
+          return { ...game, partnerScore: game.partnerScore + 1 };
+        } else if (type === 'draw') {
+          return { ...game, draws: game.draws + 1 };
+        }
+      }
+      return game;
+    });
+    this.set(this.KEYS.GAME_SCORES, updated);
+    return updated;
+  },
+
+  resetGameScores(spaceId) {
+    const reset = [
+      { gameId: "link_four", name: "Link Four", icon: "grid_on", color: "#E58B58", userScore: 0, partnerScore: 0, draws: 0 },
+      { gameId: "word_duel", name: "Word Duel", icon: "translate", color: "#6C8EEF", userScore: 0, partnerScore: 0, draws: 0 },
+      { gameId: "spotted", name: "Spotted", icon: "visibility", color: "#A78BFA", userScore: 0, partnerScore: 0, draws: 0 },
+      { gameId: "memory", name: "Memory Match", icon: "psychology", color: "#34D399", userScore: 0, partnerScore: 0, draws: 0 }
+    ];
+    this.set(this.KEYS.GAME_SCORES, reset);
+    return reset;
   }
 };
