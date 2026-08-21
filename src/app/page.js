@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { DB } from "@/lib/db";
 import { DEFAULT_DISCOVER } from "@/lib/data";
-import ShaderBackground from "@/components/ShaderBackground";
+
 
 export default function ClientPage() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -120,6 +120,10 @@ export default function ClientPage() {
   // Couples Game Scoreboard states
   const [gameScores, setGameScores] = useState([]);
 
+  // Profile & Settings states
+  const [connectPartnerCode, setConnectPartnerCode] = useState("");
+  const [editDisplayNameOpen, setEditDisplayNameOpen] = useState(false);
+
   // Load state on mount
   useEffect(() => {
     DB.init();
@@ -169,7 +173,18 @@ export default function ClientPage() {
             setCurrentDrawing(DB.getDrawing(space.id));
             setTouchPings(DB.getTouchPings(space.id));
             setDiaryEntries(DB.getDiaryEntries(space.id, user.id));
-            setGameScores(DB.getGameScores(space.id));
+            const cachedScores = DB.getGameScores(space.id);
+            setGameScores(cachedScores);
+
+            fetch(`/api/scoreboard?spaceId=${space.id}&userId=${user.id}`)
+              .then(res => res.json())
+              .then(data => {
+                if (data && data.gameScores) {
+                  setGameScores(data.gameScores);
+                  localStorage.setItem(DB.KEYS.GAME_SCORES, JSON.stringify(data.gameScores));
+                }
+              })
+              .catch(err => console.error("Error fetching scoreboard:", err));
           } else {
             setCurrentSpace(null);
             setPartnerUser(null);
@@ -248,6 +263,27 @@ export default function ClientPage() {
     return () => clearInterval(interval);
   }, [generatedSpace, currentUser]);
 
+  // Scoreboard Polling Sync
+  useEffect(() => {
+    if (currentView !== "scoreboard" || !currentSpace || !currentUser) return;
+
+    const fetchScoreboard = () => {
+      fetch(`/api/scoreboard?spaceId=${currentSpace.id}&userId=${currentUser.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.gameScores) {
+            setGameScores(data.gameScores);
+            localStorage.setItem(DB.KEYS.GAME_SCORES, JSON.stringify(data.gameScores));
+          }
+        })
+        .catch(err => console.error("Error polling scoreboard:", err));
+    };
+
+    fetchScoreboard();
+    const interval = setInterval(fetchScoreboard, 5000);
+    return () => clearInterval(interval);
+  }, [currentView, currentSpace, currentUser]);
+
   // AUTH ACTIONS
   const handleAuthSubmit = () => {
     if (!authEmail || !authPassword) return alert("Fill in required fields.");
@@ -276,6 +312,24 @@ export default function ClientPage() {
   const handleLogout = () => {
     localStorage.removeItem(DB.KEYS.ACTIVE_USER);
     clearUserState();
+  };
+
+  const handleDeleteAccount = () => {
+    if (!currentUser) return;
+    if (confirm("WARNING: Are you sure you want to permanently delete your account? This will delete all your data and cannot be undone.")) {
+      const users = DB.get(DB.KEYS.USERS);
+      const filtered = users.filter(u => u.id !== currentUser.id);
+      DB.set(DB.KEYS.USERS, filtered);
+      
+      if (currentSpace) {
+        const spaces = DB.get(DB.KEYS.SPACES);
+        const updatedSpaces = spaces.filter(s => s.id !== currentSpace.id);
+        DB.set(DB.KEYS.SPACES, updatedSpaces);
+      }
+      
+      handleLogout();
+      alert("Your account has been deleted.");
+    }
   };
 
   // ONBOARDING ACTIONS
@@ -615,16 +669,56 @@ export default function ClientPage() {
   };
 
   const handleIncrementScore = (gameId, winnerType) => {
-    if (!currentSpace) return;
+    if (!currentSpace || !currentUser) return;
+    
+    // Optimistic Update
+    setGameScores(prev => prev.map(game => {
+      if (game.gameId === gameId) {
+        if (winnerType === 'user') return { ...game, userScore: (game.userScore || 0) + 1 };
+        if (winnerType === 'partner') return { ...game, partnerScore: (game.partnerScore || 0) + 1 };
+        if (winnerType === 'draw') return { ...game, draws: (game.draws || 0) + 1 };
+      }
+      return game;
+    }));
+
+    // Local Storage backup
     DB.updateGameScore(currentSpace.id, gameId, winnerType);
-    loadState();
+
+    // Server-side Log
+    fetch("/api/scoreboard/record", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        coupleId: currentSpace.id,
+        gameType: gameId,
+        winnerId: winnerType === 'user' ? currentUser.id : (winnerType === 'partner' && partnerUser ? partnerUser.id : null),
+        isDraw: winnerType === 'draw'
+      })
+    })
+    .then(res => res.json())
+    .then(() => {
+      loadState();
+    })
+    .catch(err => console.error("Error recording score:", err));
   };
 
   const handleResetScores = () => {
     if (!currentSpace) return;
     if (confirm("Are you sure you want to reset all game scores? This cannot be undone.")) {
+      // Optimistic Clear
+      setGameScores(prev => prev.map(game => ({ ...game, userScore: 0, partnerScore: 0, draws: 0 })));
       DB.resetGameScores(currentSpace.id);
-      loadState();
+
+      fetch("/api/scoreboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coupleId: currentSpace.id })
+      })
+      .then(res => res.json())
+      .then(() => {
+        loadState();
+      })
+      .catch(err => console.error("Error resetting scores:", err));
     }
   };
 
@@ -921,18 +1015,9 @@ export default function ClientPage() {
   // 2. RENDERING CORE WORKSPACE SYSTEM (Home, Chat, Discover, Memories, Daily, etc.)
   return (
     <div className="text-on-surface font-body-md min-h-screen antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container relative">
-      <ShaderBackground />
-
-      {/* Floating Memory Bubbles (Decorative) */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="floating-bubble absolute top-[15%] left-[25%] w-[300px] h-[300px] rounded-full bg-white/10 backdrop-blur-md border border-white/20 pointer-events-none"></div>
-        <div className="floating-bubble absolute bottom-[20%] left-[10%] w-[200px] h-[200px] rounded-full bg-white/10 backdrop-blur-lg border border-white/20 pointer-events-none"></div>
-        <div className="floating-bubble absolute top-[40%] right-[35%] w-[150px] h-[150px] rounded-full bg-white/10 backdrop-blur-sm border border-white/20 pointer-events-none"></div>
-      </div>
-
       {/* Mobile Header Bar */}
       {currentUser && currentView !== "onboarding" && currentSpace && (
-        <header className="fixed top-0 left-0 right-0 h-16 z-40 bg-stone-900/80 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 lg:hidden">
+        <header className="fixed top-0 left-0 right-0 h-16 z-40 bg-[#181615] border-b border-[#282522] flex items-center justify-between px-6 lg:hidden">
           <button className="text-orange-400 flex items-center justify-center cursor-pointer bg-transparent border-0 mr-2 animate-pulse" onClick={() => setMobileSidebarOpen(true)}>
             <span className="material-symbols-outlined text-2xl">menu</span>
           </button>
@@ -966,7 +1051,7 @@ export default function ClientPage() {
 
         {/* Navigation Sidebar (Desktop) */}
         {currentUser && currentView !== "onboarding" && currentSpace && (
-          <aside className={`sidebar bg-white/10 dark:bg-inverse-surface/10 backdrop-blur-lg border-r border-white/20 shadow-sm py-8 px-4 z-50 transition-all duration-300 hover:bg-white/20 ${mobileSidebarOpen ? "mobile-open" : ""}`}>
+          <aside className={`sidebar bg-[#181615] border-r border-[#282522] shadow-sm py-8 px-4 z-50 transition-all duration-300 ${mobileSidebarOpen ? "mobile-open" : ""}`}>
             <div className="mb-12 px-4 cursor-pointer" onClick={() => navigateTo("home")}>
               <h1 className="font-headline-sm text-headline-sm text-primary font-bold drop-shadow-sm flex items-center gap-2">
                 <svg className="logo-heart" style={{ width: "24px", height: "24px", fill: "var(--primary)" }} viewBox="0 0 24 24">
@@ -1193,16 +1278,16 @@ export default function ClientPage() {
 
           {/* VIEW: HOME DASHBOARD */}
           {currentView === "home" && currentSpace && (
-            <section className="view-container active-view w-full max-w-[1100px] mx-auto py-6 px-4 md:py-12 md:px-8">
+            <section className="view-container active-view w-full max-w-[1100px] mx-auto py-6 px-4 pb-32 md:py-12 md:px-8 md:pb-32">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 {/* Left/Main Columns */}
                 <div className="lg:col-span-2 space-y-8">
                   
                   {/* Horizontal Carousel / Promos */}
-                  <div className="carousel-container select-none">
+                  <div className="flex overflow-x-auto snap-x gap-3 px-4 py-2 scrollbar-none select-none">
                     {/* Promo Card 1: Daily Connection Ritual */}
-                    <div className="carousel-card bg-gradient-to-br from-orange-600/40 to-amber-900/40 border border-orange-500/25 p-5 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg backdrop-blur-md">
+                    <div className="bg-[#3D261A] border border-[#C87545]/40 p-4 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg min-w-[280px] w-[85vw] max-w-[320px] snap-center flex-shrink-0">
                       <div>
                         <div className="flex items-center gap-1.5 text-orange-300 text-xs font-bold uppercase tracking-wider mb-2">
                           <span className="material-symbols-outlined text-sm">local_fire_department</span>
@@ -1222,7 +1307,7 @@ export default function ClientPage() {
 
                     {/* Promo Card 2: Love Letters */}
                     {loveLetters.length > 0 && (
-                      <div className="carousel-card bg-gradient-to-br from-rose-600/40 to-rose-900/40 border border-rose-500/25 p-5 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg backdrop-blur-md">
+                      <div className="bg-[#3C1E29] border border-[#C85D75]/40 p-4 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg min-w-[280px] w-[85vw] max-w-[320px] snap-center flex-shrink-0">
                         <div>
                           <div className="flex items-center gap-1.5 text-rose-300 text-xs font-bold uppercase tracking-wider mb-2">
                             <span className="material-symbols-outlined text-sm">drafts</span>
@@ -1242,7 +1327,7 @@ export default function ClientPage() {
                     )}
 
                     {/* Promo Card 3: Draw Together */}
-                    <div className="carousel-card bg-gradient-to-br from-indigo-600/40 to-indigo-900/40 border border-indigo-500/25 p-5 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg backdrop-blur-md">
+                    <div className="bg-[#2C2640] border border-[#4A3E6D]/40 p-4 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg min-w-[280px] w-[85vw] max-w-[320px] snap-center flex-shrink-0">
                       <div>
                         <div className="flex items-center gap-1.5 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
                           <span className="material-symbols-outlined text-sm">brush</span>
@@ -1844,7 +1929,7 @@ export default function ClientPage() {
 
           {/* VIEW: DISCOVER Starter Advice */}
           {currentView === "discover" && (
-            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 md:py-12 md:px-8">
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 pb-32 md:py-12 md:px-8 md:pb-32">
               <div>
                 <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Discover Starter Advice</h2>
                 <p className="text-on-surface-variant">Curated resources and reading materials for strong communication and connection rituals.</p>
@@ -2008,7 +2093,7 @@ export default function ClientPage() {
 
           {/* VIEW: DAILY RITUALS */}
           {currentView === "daily" && currentSpace && (
-            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 md:py-12 md:px-8">
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 pb-32 md:py-12 md:px-8 md:pb-32">
               <div className="daily-activities-container">
                 {/* 3D Question Card Flipping */}
                 <div className="question-panel">
@@ -2139,7 +2224,7 @@ export default function ClientPage() {
 
           {/* VIEW: MEMORIES timeline stream */}
           {currentView === "memories" && currentSpace && (
-            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 md:py-12 md:px-8 flex flex-col md:flex-row gap-8">
+            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 pb-32 md:py-12 md:px-8 md:pb-32 flex flex-col md:flex-row gap-8">
               
               {/* Memories sidebar capture form */}
               <div className="w-full md:w-80 space-y-6">
@@ -2272,118 +2357,316 @@ export default function ClientPage() {
             </section>
           )}
 
-          {/* VIEW: SETTINGS & PROFILE */}
+          {/* VIEW: SETTINGS & PROFILE REDESIGN */}
           {currentView === "profile" && currentUser && (
-            <section className="view-container active-view w-full max-w-[1200px] mx-auto py-6 px-4 md:py-12 md:px-8">
-              <div>
-                <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Settings & Profile</h2>
-                <p className="text-on-surface-variant">Update credentials, profile accents, or check space invite settings.</p>
+            <section className="view-container active-view w-full max-w-[600px] mx-auto py-6 px-4 md:py-12 md:px-8">
+              
+              {/* Settings Gear Header */}
+              <div className="flex justify-end mb-6">
+                <button 
+                  onClick={() => setCurrentView("settings")}
+                  className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-stone-300 hover:text-white transition-all cursor-pointer shadow-sm active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-[22px]">settings</span>
+                </button>
               </div>
 
-              <div className="insights-grid">
-                {/* Profile Card */}
-                <div className="glass-card flex flex-col gap-6">
-                  <h3 className="text-xl font-bold text-primary">Your Profile</h3>
-                  
-                  <div className="modal-form">
-                    <div className="flex items-center gap-5">
-                      <div className="relative group cursor-pointer" onClick={() => profileImageInputRef.current?.click()}>
-                        {profileImagePreview ? (
-                          <img src={profileImagePreview} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-primary" />
-                        ) : (
-                          renderAvatar(currentUser, "w-16 h-16", "text-xl")
-                        )}
-                        <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="material-symbols-outlined text-white text-lg">photo_camera</span>
-                        </div>
-                        <input 
-                          type="file" 
-                          ref={profileImageInputRef} 
-                          className="hidden" 
-                          accept="image/*" 
-                          onChange={handleProfileImageChange} 
-                        />
-                      </div>
-                      
-                      <div className="space-y-2 flex-1">
-                        <div className="flex gap-2">
-                          <button className="text-xs font-bold text-primary hover:underline cursor-pointer bg-transparent border-0" onClick={() => profileImageInputRef.current?.click()}>
-                            Upload Photo
-                          </button>
-                          {(currentUser.avatarUrl || profileImagePreview) && (
-                            <button className="text-xs font-bold text-red-400 hover:underline cursor-pointer bg-transparent border-0" onClick={handleRemoveProfileImage}>
-                              Remove Photo
-                            </button>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <span className="input-label">Avatar Accent Color</span>
-                          <div className="flex gap-2">
-                            {["#ff5a79", "#8a4fff", "#4dbcff", "#00e676", "#ffb800"].map((col) => (
-                              <span 
-                                key={col} 
-                                className={`w-6 h-6 rounded-full cursor-pointer border hover:scale-110 transition-transform ${currentUser.avatarColor === col ? 'border-white scale-110' : 'border-white/30'}`} 
-                                style={{ background: col }}
-                                onClick={() => {
-                                  const users = DB.get(DB.KEYS.USERS);
-                                  const u = users.find((x) => x.id === currentUser.id);
-                                  if (u) {
-                                    u.avatarColor = col;
-                                    DB.set(DB.KEYS.USERS, users);
-                                    loadState();
-                                  }
-                                }}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+              {/* User Info Header */}
+              <div className="flex items-center gap-5 mb-8 bg-[#1E1C1A]/40 p-5 rounded-3xl border border-white/5 backdrop-blur-md">
+                <div className="relative cursor-pointer select-none group" onClick={() => profileImageInputRef.current?.click()}>
+                  {profileImagePreview ? (
+                    <img src={profileImagePreview} alt="Preview" className="w-18 h-18 rounded-full object-cover border-2 border-[#E58B58]" />
+                  ) : (
+                    renderAvatar(currentUser, "w-18 h-18 text-2xl font-bold border-2 border-white/10")
+                  )}
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#E58B58] border-2 border-[#121212] flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-[12px] font-bold">photo_camera</span>
+                  </div>
+                  <input 
+                    type="file" 
+                    ref={profileImageInputRef} 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleProfileImageChange} 
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-cursive text-3xl text-amber-100 leading-tight truncate">{currentUser.name}</h3>
+                  <p className="text-xs text-stone-400 font-medium mt-1 truncate">{currentUser.email}</p>
+                </div>
+              </div>
 
-                    <div className="input-group">
-                      <label className="input-label">Full Name</label>
-                      <input type="text" className="input-field" value={profileName} onChange={(e) => setProfileName(e.target.value)} />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label">Email Address</label>
-                      <input type="email" className="input-field opacity-60 cursor-not-allowed" value={currentUser.email} disabled />
-                    </div>
-                    
-                    <div className="flex gap-3 pt-2">
-                      <button className="btn btn-primary" onClick={handleProfileSave}>Save Profile</button>
-                      <button className="btn btn-glass" onClick={handleLogout}>Log Out</button>
+              {/* Section Header: Partner */}
+              <div className="flex items-center gap-3 mb-5">
+                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Partner</span>
+                <div className="h-[2px] w-8 bg-[#E58B58] rounded-full"></div>
+              </div>
+
+              {/* Pairing & Invite Section */}
+              {!currentSpace || !partnerUser ? (
+                /* Unpaired: Invite & Entry Card */
+                <div className="settings-card p-6 flex flex-col gap-6">
+                  <div>
+                    <h4 className="text-sm font-bold text-white mb-1">Pairing Code</h4>
+                    <p className="text-xs text-stone-400 leading-relaxed">Your invite code — share with your partner to link spaces.</p>
+                  </div>
+
+                  {/* Illustrated Envelope Element */}
+                  <div 
+                    onClick={() => {
+                      if (currentSpace?.code) {
+                        navigator.clipboard.writeText(currentSpace.code);
+                        alert(`Invite code "${currentSpace.code}" copied to clipboard! Share it with your partner.`);
+                      }
+                    }}
+                    className="envelope-container"
+                  >
+                    <div className="wax-seal"></div>
+                    <span className="font-cursive text-amber-100/90 text-lg">to your person</span>
+                    <span className="font-mono text-xl tracking-[0.25em] font-extrabold text-[#E58B58] uppercase mt-3 select-all">
+                      {currentSpace ? currentSpace.code.match(/.{1,4}/g).join(" ") : "N O   C O D E"}
+                    </span>
+                    <span className="text-[9px] text-[#8A847F] uppercase tracking-wider font-bold mt-4 select-none">
+                      tap envelope to share
+                    </span>
+                  </div>
+
+                  {/* Divider "or" */}
+                  <div className="relative flex py-2 items-center">
+                    <div className="flex-grow border-t border-white/5"></div>
+                    <span className="flex-shrink mx-4 text-xs font-bold text-stone-600 uppercase tracking-widest">or</span>
+                    <div className="flex-grow border-t border-white/5"></div>
+                  </div>
+
+                  {/* Code Entry Form */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Enter your partner's code</label>
+                    <div className="flex gap-3">
+                      <input 
+                        type="text" 
+                        maxLength="11"
+                        className="input-field w-full py-3 px-4 font-mono uppercase tracking-[0.25em] text-center text-sm rounded-xl" 
+                        placeholder="X X X X - X X X X"
+                        value={connectPartnerCode}
+                        onChange={(e) => setConnectPartnerCode(e.target.value.toUpperCase())}
+                      />
+                      <button 
+                        onClick={() => {
+                          if (!connectPartnerCode.trim()) return alert("Please enter a pairing code.");
+                          handleJoinSpaceCode(connectPartnerCode);
+                        }}
+                        className="px-5 py-3 bg-[#E58B58] hover:bg-[#D47A47] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                      >
+                        Connect
+                      </button>
                     </div>
                   </div>
                 </div>
+              ) : (
+                /* Paired State Card */
+                <div className="settings-card p-6 flex flex-col items-center text-center relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                  <div className="flex items-center gap-4 justify-center mb-6 mt-2">
+                    {renderAvatar(currentUser, "w-14 h-14 border border-[#E58B58]/40", "text-base font-bold")}
+                    <div className="h-[2px] w-12 bg-gradient-to-r from-[#E58B58] to-[#6C8EEF]"></div>
+                    {renderAvatar(partnerUser, "w-14 h-14 border border-[#6C8EEF]/40", "text-base font-bold")}
+                  </div>
+                  <h4 className="text-base font-bold text-white mb-1">Paired Space Connected</h4>
+                  <p className="text-xs text-stone-400 font-body-md mb-6 max-w-xs leading-relaxed">
+                    You are connected with <span className="font-cursive text-amber-200 text-lg leading-none">{partnerUser.name}</span>. Everything you plan, draw, and track will sync.
+                  </p>
+                  <button 
+                    onClick={handleLeaveSpace}
+                    className="btn btn-glass border-red-500/20 text-red-400 hover:bg-red-500/10 text-xs py-2 px-6 rounded-full"
+                  >
+                    Disconnect Space
+                  </button>
+                </div>
+              )}
 
-                {/* Space Settings Card */}
-                <div className="glass-card flex flex-col gap-6">
-                  <h3 className="text-xl font-bold text-primary">Space Settings</h3>
-                  {currentSpace ? (
-                    <div className="space-y-4">
-                      <div>
-                        <span className="input-label">Space ID</span>
-                        <div className="font-mono text-sm font-semibold mt-1 text-on-surface">{currentSpace.id}</div>
-                      </div>
-                      <div>
-                        <span className="input-label">Invite Code</span>
-                        <div className="font-mono text-xl font-bold mt-1 text-primary tracking-widest">{currentSpace.code}</div>
-                      </div>
-                      <div>
-                        <span className="input-label">Relationship Mode</span>
-                        <div className="text-sm font-bold mt-1 uppercase tracking-wider text-on-surface-variant">{currentSpace.relationshipMode.replace("_", " ")}</div>
-                      </div>
-                      <div className="pt-4 border-t border-white/20">
-                        <button className="btn btn-glass border-red-500/30 text-red-500 hover:bg-red-500/10" onClick={handleLeaveSpace}>
-                          Leave Shared Space
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-on-surface-variant">You are not connected to any space yet.</p>
-                  )}
+            </section>
+          )}
+
+          {/* VIEW: SETTINGS SCREEN */}
+          {currentView === "settings" && currentUser && (
+            <section className="view-container active-view w-full max-w-[600px] mx-auto py-6 px-4 md:py-12 md:px-8">
+              
+              {/* Settings Top Nav Bar */}
+              <div className="flex items-center justify-between mb-8">
+                <button 
+                  onClick={() => {
+                    setEditDisplayNameOpen(false);
+                    setCurrentView("profile");
+                  }}
+                  className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-stone-300 hover:text-white transition-all cursor-pointer active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+                </button>
+                <h2 className="font-cursive text-3xl text-amber-100">Settings</h2>
+                <div className="w-10"></div> {/* Balanced spacer */}
+              </div>
+
+              {/* Group 1: Subscription */}
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Subscription</span>
+              </div>
+              <div className="settings-card">
+                <div 
+                  onClick={() => alert("Thank you for supporting BetweenUs! Upgrade to Pro features is coming soon.")}
+                  className="settings-row"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-white">BetweenUs Pro</span>
+                    <span className="text-xs text-stone-400">Upgrade to unlock full features</span>
+                  </div>
+                  <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
+                </div>
+                <div 
+                  onClick={() => alert("Purchases successfully restored.")}
+                  className="settings-row"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-white">Restore purchases</span>
+                    <span className="text-xs text-stone-400">Already subscribed? Tap to restore</span>
+                  </div>
+                  <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
                 </div>
               </div>
+
+              {/* Group 2: Account */}
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Account</span>
+              </div>
+              <div className="settings-card">
+                
+                {/* Display Name Tile (Inline Editor) */}
+                <div className="settings-row cursor-default">
+                  {editDisplayNameOpen ? (
+                    <div className="flex items-center gap-2 w-full py-1">
+                      <input 
+                        type="text" 
+                        className="input-field w-full py-2 px-3 text-xs bg-stone-900 border-white/10 rounded-lg text-white" 
+                        value={profileName} 
+                        onChange={(e) => setProfileName(e.target.value)} 
+                        autoFocus
+                      />
+                      <button 
+                        onClick={() => {
+                          if (!profileName.trim()) return alert("Name cannot be empty.");
+                          handleProfileSave();
+                          setEditDisplayNameOpen(false);
+                        }}
+                        className="px-4 py-2 bg-[#E58B58] hover:bg-[#D47A47] text-white text-[11px] rounded-lg font-bold transition-colors cursor-pointer"
+                      >
+                        Save
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setProfileName(currentUser.name);
+                          setEditDisplayNameOpen(false);
+                        }}
+                        className="px-3 py-2 bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white text-[11px] rounded-lg font-bold transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => setEditDisplayNameOpen(true)}
+                      className="flex items-center justify-between w-full"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-white">Display name</span>
+                        <span className="text-xs text-stone-400">{currentUser.name}</span>
+                      </div>
+                      <span className="material-symbols-outlined text-stone-500 hover:text-white text-lg transition-colors">edit</span>
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  onClick={() => alert("Notification settings configured. You will receive updates about date countdowns and daily challenges.")}
+                  className="settings-row"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-white">Notifications</span>
+                    <span className="text-xs text-stone-400">Choose what you hear about</span>
+                  </div>
+                  <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
+                </div>
+
+                <div 
+                  onClick={() => alert("To add widgets, go to your iOS / Android home screen, long press, search for BetweenUs, and select either the Date Countdown or Drawing Canvas widgets.")}
+                  className="settings-row"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-white">Widgets</span>
+                    <span className="text-xs text-stone-400">Set up Countdown and Canvas</span>
+                  </div>
+                  <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
+                </div>
+
+                {/* Sign Out (Terracotta) */}
+                <div 
+                  onClick={handleLogout}
+                  className="settings-row hover:bg-red-500/5 group"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-[#E58B58] group-hover:text-red-400 transition-colors">Sign out</span>
+                  </div>
+                  <span className="material-symbols-outlined text-[#E58B58] group-hover:text-red-400 text-base transition-colors">logout</span>
+                </div>
+
+                {/* Delete Account (Terracotta) */}
+                <div 
+                  onClick={handleDeleteAccount}
+                  className="settings-row hover:bg-red-500/5 group"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-[#E58B58] group-hover:text-red-400 transition-colors">Delete account</span>
+                  </div>
+                  <span className="material-symbols-outlined text-[#E58B58] group-hover:text-red-400 text-base transition-colors">delete_forever</span>
+                </div>
+
+              </div>
+
+              {/* Group 3: Feedback */}
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Feedback</span>
+              </div>
+              <div className="settings-card">
+                <a 
+                  href="mailto:support@betweenus.app?subject=Feedback"
+                  className="settings-row no-underline text-stone-300"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-white">Leave feedback</span>
+                    <span className="text-xs text-stone-400">Tell us what to improve or what you want next</span>
+                  </div>
+                  <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
+                </a>
+              </div>
+
+              {/* Group 4: Legal */}
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <span className="text-[10px] font-bold tracking-[0.2em] text-[#8A847F] uppercase">Legal</span>
+              </div>
+              <div className="settings-card">
+                <a href="#" onClick={(e) => { e.preventDefault(); alert("Terms of Service summary: Play fair, stay connected, keep it between us!"); }} className="settings-row no-underline text-stone-300">
+                  <span className="text-sm font-bold text-white">Terms of Service</span>
+                  <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
+                </a>
+                <a href="#" onClick={(e) => { e.preventDefault(); alert("Privacy Policy summary: Your private entries, drawings, and scores are strictly local/private between you and your partner."); }} className="settings-row no-underline text-stone-300">
+                  <span className="text-sm font-bold text-white">Privacy Policy</span>
+                  <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
+                </a>
+              </div>
+
+              {/* Version Footer */}
+              <div className="text-center py-6">
+                <p className="text-[10px] font-bold tracking-wider text-stone-600 uppercase">BetweenUs • v1.0</p>
+              </div>
+
             </section>
           )}
 
@@ -2391,7 +2674,7 @@ export default function ClientPage() {
 
         {/* Bottom Nav Bar (Mobile Only) */}
         {currentUser && currentView !== "landing" && currentView !== "onboarding" && currentSpace && (
-          <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-6 pb-8 pt-4 bg-surface/30 dark:bg-surface/10 backdrop-blur-[40px] border-t border-white/20 rounded-t-[24px] md:hidden shadow-lg">
+          <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-6 pb-8 pt-4 bg-[#181615] border-t border-[#282522] rounded-t-[24px] md:hidden shadow-lg">
             
             {/* Sanctuary (Home) */}
             <button 
@@ -2431,7 +2714,7 @@ export default function ClientPage() {
 
             {/* Profile (Settings) */}
             <button 
-              className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "profile" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${(currentView === "profile" || currentView === "settings") ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
               onClick={() => setCurrentView("profile")}
             >
               <span className="material-symbols-outlined mb-1">person_heart</span>

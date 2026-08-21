@@ -6,11 +6,14 @@ const dbPath = path.join(process.cwd(), 'src/lib/serverDb.json');
 function readDb() {
   try {
     if (!fs.existsSync(dbPath)) {
-      return { spaces: [] };
+      return { spaces: [], gameSessions: [] };
     }
-    return JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+    if (!data.spaces) data.spaces = [];
+    if (!data.gameSessions) data.gameSessions = [];
+    return data;
   } catch (e) {
-    return { spaces: [] };
+    return { spaces: [], gameSessions: [] };
   }
 }
 
@@ -48,5 +51,28 @@ export const ServerDB = {
 
   findSpaceById(id) {
     return this.getSpaces().find(s => s.id === id);
+  },
+
+  getGameSessions(coupleId) {
+    return readDb().gameSessions.filter(gs => gs.coupleId === coupleId);
+  },
+
+  saveGameSession(session) {
+    const db = readDb();
+    db.gameSessions.push({
+      id: session.id || "gs_" + Math.random().toString(36).substr(2, 9),
+      coupleId: session.coupleId,
+      gameType: session.gameType,
+      winnerId: session.winnerId || null,
+      isDraw: !!session.isDraw,
+      createdAt: session.createdAt || new Date().toISOString()
+    });
+    writeDb(db);
+  },
+
+  resetGameSessions(coupleId) {
+    const db = readDb();
+    db.gameSessions = db.gameSessions.filter(gs => gs.coupleId !== coupleId);
+    writeDb(db);
   }
 };
