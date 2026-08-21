@@ -2513,7 +2513,13 @@ export default function ClientPage() {
                         <p className="text-xs text-on-surface-variant mt-1">Complete more daily challenges together to boost your Appreciation score higher!</p>
                       </div>
                     </div>
-                  {/* VIEW: SETTINGS & PROFILE REDESIGN */}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* VIEW: SETTINGS & PROFILE REDESIGN */}
           {currentView === "profile" && currentUser && (
             <section className="view-container active-view w-full min-h-screen pb-28 pt-4 px-4 flex flex-col items-center select-none">
               <div className="w-full max-w-sm flex flex-col gap-6">
