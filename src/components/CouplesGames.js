@@ -305,7 +305,7 @@ export function WordDuel({ onComplete, currentUser, partnerUser }) {
 }
 
 // --- 3. SPOTTED GAME ---
-export function Spotted({ onComplete, currentUser, partnerUser }) {
+export function Spotted({ onComplete, currentUser, partnerUser, onClose }) {
   const [gameStage, setGameStage] = useState("intro"); // 'intro', 'playing', 'game_over'
   const [currentPlayer, setCurrentPlayer] = useState("user"); // 'user', then 'partner'
   const [round, setRound] = useState(1);
@@ -377,16 +377,37 @@ export function Spotted({ onComplete, currentUser, partnerUser }) {
     : (partnerUser ? partnerUser.name : "Partner");
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full text-center">
+    <div className="relative w-full max-w-sm mx-auto bg-[#1E1C1A] border border-[#2D2A26] rounded-3xl p-6 text-center flex flex-col items-center gap-5 shadow-2xl select-none">
+      {/* Close Button */}
+      <button 
+        onClick={onClose} 
+        className="absolute top-4 right-4 text-stone-400 hover:text-white p-1 transition-colors border-none bg-transparent cursor-pointer"
+      >
+        ✕
+      </button>
+
       {gameStage === "intro" && (
-        <div className="space-y-4">
-          <p className="text-xs text-stone-400 max-w-xs leading-relaxed">
-            Spot the single matching emoji between the left and right cards as fast as you can! First, Player 1 plays 3 rounds, then Player 2 plays 3 rounds.
+        <>
+          {/* Title */}
+          <h2 className="text-2xl font-serif italic text-[#E58B58]">
+            Spotted
+          </h2>
+
+          {/* Instructions */}
+          <p className="w-full max-w-[280px] mx-auto text-sm text-stone-300/90 leading-relaxed text-center whitespace-normal break-words">
+            Spot the single matching emoji between the left and right cards as fast as you can!
+            <br className="mb-2" />
+            First, Player 1 plays 3 rounds, then Player 2 plays 3 rounds.
           </p>
-          <button onClick={handleStartGame} className="btn btn-primary text-xs py-2 px-6 justify-center w-full">
+
+          {/* Start Button */}
+          <button 
+            onClick={handleStartGame}
+            className="w-full py-3.5 bg-[#D9885C] hover:bg-[#c6764b] text-white font-medium text-sm rounded-2xl shadow-lg transition-transform active:scale-95 cursor-pointer border-none"
+          >
             Start Spotted Duel
           </button>
-        </div>
+        </>
       )}
 
       {gameStage === "playing" && (
@@ -401,7 +422,7 @@ export function Spotted({ onComplete, currentUser, partnerUser }) {
 
           <div className="flex gap-4 items-center justify-center py-2">
             {/* Card A */}
-            <div className="w-28 h-28 rounded-full bg-[#1E1C1A] border border-[#2D2A26] grid grid-cols-3 items-center justify-items-center p-2 relative shadow-md">
+            <div className="w-28 h-28 rounded-full bg-[#141211] border border-[#2D2A26] grid grid-cols-3 items-center justify-items-center p-2 relative shadow-md">
               {cardA.map((emoji, idx) => (
                 <button
                   key={idx}
@@ -417,7 +438,7 @@ export function Spotted({ onComplete, currentUser, partnerUser }) {
             <span className="text-[10px] font-bold text-stone-600">VS</span>
 
             {/* Card B */}
-            <div className="w-28 h-28 rounded-full bg-[#1E1C1A] border border-[#2D2A26] grid grid-cols-3 items-center justify-items-center p-2 relative shadow-md">
+            <div className="w-28 h-28 rounded-full bg-[#141211] border border-[#2D2A26] grid grid-cols-3 items-center justify-items-center p-2 relative shadow-md">
               {cardB.map((emoji, idx) => (
                 <button
                   key={idx}
@@ -435,7 +456,7 @@ export function Spotted({ onComplete, currentUser, partnerUser }) {
       )}
 
       {gameStage === "game_over" && (
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           <p className="text-base font-bold text-white">
             {winner === "draw" ? (
               "It's a Tied Game!"
@@ -454,7 +475,7 @@ export function Spotted({ onComplete, currentUser, partnerUser }) {
           </div>
           <button
             onClick={() => onComplete(winner)}
-            className="btn btn-primary text-xs py-2 px-6 w-full justify-center"
+            className="w-full py-3 bg-[#D9885C] hover:bg-[#c4774c] text-white font-semibold text-sm rounded-2xl transition-colors shadow-md mt-2 cursor-pointer border-none"
           >
             Record Result
           </button>

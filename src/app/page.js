@@ -3295,61 +3295,62 @@ export default function ClientPage() {
       {/* --- INTERACTIVE SCOREBOARD GAMES MODALS --- */}
       {activeGameModal && (
         <div className="modal-overlay flex" onClick={() => setActiveGameModal(null)}>
-          <div className="modal-content glass-card rounded-[28px] max-w-md p-6 overflow-y-auto max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close text-stone-400 hover:text-white" onClick={() => setActiveGameModal(null)}>&times;</button>
-            
-            <h3 className="text-xl font-bold font-cursive text-orange-200 mb-4 text-center">
-              {activeGameModal === "link_four" && "Link Four"}
-              {activeGameModal === "word_duel" && "Word Duel"}
-              {activeGameModal === "spotted" && "Spotted"}
-              {activeGameModal === "memory" && "Memory Match"}
-            </h3>
-
-            {activeGameModal === "link_four" && (
-              <LinkFour 
-                currentUser={currentUser}
-                partnerUser={partnerUser}
-                onComplete={(winnerType) => {
-                  handleIncrementScore("link_four", winnerType);
-                  setActiveGameModal(null);
-                }}
-              />
-            )}
-
-            {activeGameModal === "word_duel" && (
-              <WordDuel 
-                currentUser={currentUser}
-                partnerUser={partnerUser}
-                onComplete={(winnerType) => {
-                  handleIncrementScore("word_duel", winnerType);
-                  setActiveGameModal(null);
-                }}
-              />
-            )}
-
-            {activeGameModal === "spotted" && (
+          {activeGameModal === "spotted" ? (
+            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm mx-auto px-4">
               <Spotted 
                 currentUser={currentUser}
                 partnerUser={partnerUser}
+                onClose={() => setActiveGameModal(null)}
                 onComplete={(winnerType) => {
                   handleIncrementScore("spotted", winnerType);
                   setActiveGameModal(null);
                 }}
               />
-            )}
+            </div>
+          ) : (
+            <div className="modal-content glass-card rounded-[28px] max-w-md p-6 overflow-y-auto max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close text-stone-400 hover:text-white" onClick={() => setActiveGameModal(null)}>&times;</button>
+              
+              <h3 className="text-xl font-bold font-cursive text-orange-200 mb-4 text-center">
+                {activeGameModal === "link_four" && "Link Four"}
+                {activeGameModal === "word_duel" && "Word Duel"}
+                {activeGameModal === "memory" && "Memory Match"}
+              </h3>
 
-            {activeGameModal === "memory" && (
-              <MemoryMatch 
-                currentUser={currentUser}
-                partnerUser={partnerUser}
-                onComplete={(winnerType) => {
-                  handleIncrementScore("memory", winnerType);
-                  setActiveGameModal(null);
-                }}
-              />
-            )}
-            
-          </div>
+              {activeGameModal === "link_four" && (
+                <LinkFour 
+                  currentUser={currentUser}
+                  partnerUser={partnerUser}
+                  onComplete={(winnerType) => {
+                    handleIncrementScore("link_four", winnerType);
+                    setActiveGameModal(null);
+                  }}
+                />
+              )}
+
+              {activeGameModal === "word_duel" && (
+                <WordDuel 
+                  currentUser={currentUser}
+                  partnerUser={partnerUser}
+                  onComplete={(winnerType) => {
+                    handleIncrementScore("word_duel", winnerType);
+                    setActiveGameModal(null);
+                  }}
+                />
+              )}
+
+              {activeGameModal === "memory" && (
+                <MemoryMatch 
+                  currentUser={currentUser}
+                  partnerUser={partnerUser}
+                  onComplete={(winnerType) => {
+                    handleIncrementScore("memory", winnerType);
+                    setActiveGameModal(null);
+                  }}
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
 
