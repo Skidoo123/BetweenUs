@@ -1284,66 +1284,51 @@ export default function ClientPage() {
                 {/* Left/Main Columns */}
                 <div className="lg:col-span-2 space-y-8">
                   
-                  {/* Horizontal Carousel / Promos */}
-                  <div className="flex overflow-x-auto snap-x gap-3 px-4 py-2 scrollbar-none select-none">
+                  {/* Grid Container (Side-by-side 2-columns) */}
+                  <div className="grid grid-cols-2 gap-3 px-4 w-full select-none">
+                    
                     {/* Promo Card 1: Daily Connection Ritual */}
-                    <div className="bg-[#3D261A] border border-[#C87545]/40 p-4 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg min-w-[280px] w-[85vw] max-w-[320px] snap-center flex-shrink-0">
-                      <div>
-                        <div className="flex items-center gap-1.5 text-orange-300 text-xs font-bold uppercase tracking-wider mb-2">
-                          <span className="material-symbols-outlined text-sm">local_fire_department</span>
-                          <span>Keep Streak Burning</span>
-                        </div>
-                        <h4 className="text-sm font-semibold text-white line-clamp-2 leading-relaxed">
-                          {todayQuestion ? todayQuestion.text : "Answer today's prompt to keep your streak alive!"}
-                        </h4>
-                      </div>
-                      <button 
-                        onClick={() => setCurrentView("daily")}
-                        className="self-start text-xs font-bold text-orange-200 bg-orange-500/20 hover:bg-orange-500/30 px-3 py-1.5 rounded-lg border border-orange-500/30 transition-all cursor-pointer"
-                      >
-                        {myAnswer ? "View Responses" : "Answer Now"}
-                      </button>
-                    </div>
-
-                    {/* Promo Card 2: Love Letters */}
-                    {loveLetters.length > 0 && (
-                      <div className="bg-[#3C1E29] border border-[#C85D75]/40 p-4 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg min-w-[280px] w-[85vw] max-w-[320px] snap-center flex-shrink-0">
+                    <div className="bg-[#3D261A] border border-[#C87545]/40 p-3.5 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg w-full">
+                      <div className="flex flex-col justify-between h-full">
                         <div>
-                          <div className="flex items-center gap-1.5 text-rose-300 text-xs font-bold uppercase tracking-wider mb-2">
-                            <span className="material-symbols-outlined text-sm">drafts</span>
-                            <span>Cozy Notes</span>
+                          <div className="flex items-center gap-1.5 text-orange-300 text-[10px] font-bold uppercase tracking-wider mb-2">
+                            <span className="material-symbols-outlined text-xs">local_fire_department</span>
+                            <span>Streak</span>
                           </div>
-                          <h4 className="text-sm font-semibold text-white line-clamp-2 leading-relaxed">
-                            Read letters and digital notes left in your private mailbox.
+                          <h4 className="text-[11px] leading-snug font-semibold text-white line-clamp-2">
+                            {todayQuestion ? todayQuestion.text : "Answer today's prompt to keep your streak alive!"}
                           </h4>
                         </div>
                         <button 
-                          onClick={() => setActiveActivityModal('love_letter_list')}
-                          className="self-start text-xs font-bold text-rose-200 bg-rose-500/20 hover:bg-rose-500/30 px-3 py-1.5 rounded-lg border border-rose-500/30 transition-all cursor-pointer"
+                          onClick={() => setCurrentView("daily")}
+                          className="text-xs py-1.5 px-2.5 rounded-lg w-full text-center mt-auto font-medium text-orange-200 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 transition-all cursor-pointer"
                         >
-                          Open Mailbox ({loveLetters.length})
+                          {myAnswer ? "Responses" : "Answer"}
                         </button>
                       </div>
-                    )}
-
-                    {/* Promo Card 3: Draw Together */}
-                    <div className="bg-[#2C2640] border border-[#4A3E6D]/40 p-4 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg min-w-[280px] w-[85vw] max-w-[320px] snap-center flex-shrink-0">
-                      <div>
-                        <div className="flex items-center gap-1.5 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
-                          <span className="material-symbols-outlined text-sm">brush</span>
-                          <span>Collaborative Canvas</span>
-                        </div>
-                        <h4 className="text-sm font-semibold text-white line-clamp-2 leading-relaxed">
-                          Sketch, draw, and share real-time turn-based doodles with each other.
-                        </h4>
-                      </div>
-                      <button 
-                        onClick={() => setActiveActivityModal('draw')}
-                        className="self-start text-xs font-bold text-indigo-200 bg-indigo-500/20 hover:bg-indigo-500/30 px-3 py-1.5 rounded-lg border border-indigo-500/30 transition-all cursor-pointer"
-                      >
-                        Sketch Canvas
-                      </button>
                     </div>
+
+                    {/* Promo Card 2: Draw Together */}
+                    <div className="bg-[#2C2640] border border-[#4A3E6D]/40 p-3.5 rounded-2xl flex flex-col justify-between h-[160px] shadow-lg w-full">
+                      <div className="flex flex-col justify-between h-full">
+                        <div>
+                          <div className="flex items-center gap-1.5 text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-2">
+                            <span className="material-symbols-outlined text-xs">brush</span>
+                            <span>Canvas</span>
+                          </div>
+                          <h4 className="text-[11px] leading-snug font-semibold text-white line-clamp-2">
+                            Sketch, draw, and share real-time doodles with each other.
+                          </h4>
+                        </div>
+                        <button 
+                          onClick={() => setActiveActivityModal('draw')}
+                          className="text-xs py-1.5 px-2.5 rounded-lg w-full text-center mt-auto font-medium text-indigo-200 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 transition-all cursor-pointer"
+                        >
+                          Sketch
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
 
                   {/* Partner Status Card */}
