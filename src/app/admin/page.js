@@ -368,7 +368,7 @@ export default function AdminPage() {
         </aside>
 
         {/* Main Dashboard Area */}
-        <main className="main-content flex-1 min-h-screen p-8 md:p-12 overflow-y-auto">
+        <main className="flex-grow flex-shrink flex-1 min-w-0 min-h-screen p-8 md:p-12 overflow-y-auto flex flex-col gap-6 max-w-6xl mx-auto w-full">
           
           {/* TAB: OVERVIEW */}
           {activeTab === "overview" && (
@@ -808,7 +808,7 @@ export default function AdminPage() {
                     <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-800 rounded-xl text-sm flex gap-3">
                       <span className="material-symbols-outlined text-red-600">warning</span>
                       <div>
-                        <strong class="block">Danger Zone</strong>
+                        <strong className="block">Danger Zone</strong>
                         These settings directly modify the localStorage tables shared by all open instances. Data deleted here cannot be recovered.
                       </div>
                     </div>

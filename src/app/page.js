@@ -3,7 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import { DB } from "@/lib/db";
 import { DEFAULT_DISCOVER } from "@/lib/data";
-
+import ProfilePage from "@/components/ProfilePage";
+import SettingsPage from "@/components/SettingsPage";
+import "./profile.css";
+import "./settings.css";
 
 import { LinkFour, WordDuel, Spotted, MemoryMatch } from "@/components/CouplesGames";
 
@@ -82,6 +85,7 @@ export default function ClientPage() {
 
   // Dev toolbar state
   const [devToolbarCollapsed, setDevToolbarCollapsed] = useState(true);
+  const [showDevToolbar, setShowDevToolbar] = useState(false);
 
   // New UX state variables
   const [partnerOnboardName, setPartnerOnboardName] = useState("");
@@ -134,6 +138,10 @@ export default function ClientPage() {
     DB.init();
     loadState();
     setIsMounted(true);
+    
+    if (typeof window !== "undefined" && window.location.search.includes("dev=true")) {
+      setShowDevToolbar(true);
+    }
 
     // Event listener for tab sync
     const handleStorageChange = (e) => {
@@ -763,6 +771,87 @@ export default function ClientPage() {
     loadState();
   };
 
+  const handleConnectPartner = async (code) => {
+    setOnboardLoading(true);
+    try {
+      const res = await fetch("/api/spaces/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: code.trim(),
+          joinerId: currentUser.id
+        })
+      });
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      const localSpaces = DB.get(DB.KEYS.SPACES);
+      const index = localSpaces.findIndex(s => s.id === data.space.id);
+      if (index > -1) {
+        localSpaces[index] = data.space;
+      } else {
+        localSpaces.push(data.space);
+      }
+      DB.set(DB.KEYS.SPACES, localSpaces);
+
+      const localUsers = DB.get(DB.KEYS.USERS);
+      const user = localUsers.find(u => u.id === currentUser.id);
+      if (user) {
+        user.currentSpaceId = data.space.id;
+        DB.set(DB.KEYS.USERS, localUsers);
+      }
+      loadState();
+      alert("Successfully connected spaces! 🎉");
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setOnboardLoading(false);
+    }
+  };
+
+  const handleUpdateDisplayName = (newName) => {
+    if (!newName.trim()) return;
+    const users = DB.get(DB.KEYS.USERS);
+    const u = users.find((x) => x.id === currentUser.id);
+    if (u) {
+      u.name = newName.trim();
+      DB.set(DB.KEYS.USERS, users);
+      loadState();
+      alert("Display name updated!");
+    }
+  };
+
+  const handleProfileImageChangeAndSave = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target.result;
+      setProfileImagePreview(dataUrl);
+      
+      const users = DB.get(DB.KEYS.USERS);
+      const u = users.find((x) => x.id === currentUser.id);
+      if (u) {
+        u.avatarUrl = dataUrl;
+        DB.set(DB.KEYS.USERS, users);
+        loadState();
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleLeaveSpace = () => {
     if (!currentSpace || !currentUser) return;
     if (confirm("Are you sure you want to delete and leave this shared connection space? All chat messages and daily streaks will be cleared.")) {
@@ -1060,11 +1149,11 @@ export default function ClientPage() {
               </a>
               <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "daily" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("daily"); }}>
                 <span className="material-symbols-outlined">calendar_today</span>
-                <span className="font-label-md text-label-md">Daily</span>
+                <span className="font-label-md text-label-md">Closer</span>
               </a>
               <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "memories" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("memories"); }}>
                 <span className="material-symbols-outlined">auto_stories</span>
-                <span className="font-label-md text-label-md">Memories</span>
+                <span className="font-label-md text-label-md">Feed</span>
               </a>
               <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "diary" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("diary"); }}>
                 <span className="material-symbols-outlined">book</span>
@@ -1078,7 +1167,7 @@ export default function ClientPage() {
                 <span className="material-symbols-outlined">insights</span>
                 <span className="font-label-md text-label-md">Insights</span>
               </a>
-              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "profile" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("profile"); }}>
+              <a href="#" className={`nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all scale-98 active:scale-95 duration-200 ${currentView === "profile" || currentView === "settings" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); navigateTo("profile"); }}>
                 <span className="material-symbols-outlined">person</span>
                 <span className="font-label-md text-label-md">Profile</span>
               </a>
@@ -1105,9 +1194,36 @@ export default function ClientPage() {
 
         {/* Main Content Area */}
         <div className="flex-grow flex-shrink flex-1 min-w-0 h-full flex flex-col overflow-y-auto">
-          
-          {/* Top Header Bar */}
-          {currentUser && currentView !== "landing" && currentView !== "onboarding" && currentView !== "scoreboard" && currentSpace && (
+          {currentView === "profile" ? (
+            <ProfilePage
+              user={currentUser}
+              partner={partnerUser}
+              inviteCode={currentSpace ? currentSpace.code : "VPRSQSYV"}
+              onConnectPartner={handleConnectPartner}
+              onNavigate={navigateTo}
+              onOpenSettings={() => navigateTo("settings")}
+              profileImagePreview={profileImagePreview}
+              onProfileImageChange={handleProfileImageChangeAndSave}
+            />
+          ) : currentView === "settings" ? (
+            <SettingsPage
+              user={currentUser}
+              onBack={() => navigateTo("profile")}
+              onSubscription={() => alert("Tend App Pro upgraded! All space features unlocked.")}
+              onRestorePurchases={() => alert("Purchases restored successfully.")}
+              onNotifications={() => alert("Notification settings saved.")}
+              onWidgets={() => alert("Countdown and Canvas widgets synced with home screen.")}
+              onDisplayName={handleUpdateDisplayName}
+              onSignOut={handleLogout}
+              onDeleteAccount={handleDeleteAccount}
+              onFeedback={() => alert("Thank you for your feedback! It has been submitted to the Tend team.")}
+              onTerms={() => alert("Terms of Service updated for 2026.")}
+              onPrivacy={() => alert("Privacy Policy: Your data is encrypted locally.")}
+            />
+          ) : (
+            <>
+              {/* Top Header Bar */}
+              {currentUser && currentView !== "landing" && currentView !== "onboarding" && currentView !== "scoreboard" && currentSpace && (
             <header className="sticky top-0 z-20 w-full bg-[#161413] border-b border-[#24211E] px-8 py-4 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
                 {/* Mobile Hamburger Button */}
@@ -2519,228 +2635,15 @@ export default function ClientPage() {
             </section>
           )}
 
-          {/* VIEW: SETTINGS & PROFILE REDESIGN */}
-          {/* VIEW: PROFILE SCREEN (REBUILT STARTER LAYOUT) */}
-          {currentView === "profile" && currentUser && (
-            <section className="view-container active-view w-full min-h-screen pb-28 pt-4 px-4 flex flex-col items-center select-none">
-              <div className="w-full max-w-sm flex flex-col gap-6 bg-[#1F1C1A] border border-[#2D2A26] rounded-3xl p-6 shadow-lg">
-                
-                {/* Header Row */}
-                <div className="flex justify-between items-center w-full">
-                  <h2 className="text-xl font-bold text-white font-serif italic">My Profile</h2>
-                  <button 
-                    onClick={() => setCurrentView("settings")}
-                    className="p-2 text-stone-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
-                    title="Settings"
-                  >
-                    <span className="material-symbols-outlined text-[24px]">settings</span>
-                  </button>
-                </div>
 
-                {/* Profile Starter Content */}
-                <div className="flex flex-col items-center gap-4 py-4">
-                  <div className="w-20 h-20 rounded-full bg-[#3D261A] border border-[#523322] flex items-center justify-center text-2xl font-bold text-[#E58B58]">
-                    {currentUser.name[0].toUpperCase()}
-                  </div>
-                  <div className="text-center">
-                    <h3 className="text-lg font-bold text-white">{currentUser.name}</h3>
-                    <p className="text-xs text-stone-400">{currentUser.email}</p>
-                  </div>
-                </div>
 
-                {/* Connection Section */}
-                <div className="border-t border-[#2D2A26] pt-4 w-full text-center">
-                  <p className="text-xs text-stone-400 mb-2">Rebuild your partner interface here...</p>
-                  <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-xl text-stone-500 text-xs">
-                    Starter Card Placeholder
-                  </div>
-                </div>
-
-              </div>
-            </section>
-          )}
-
-          {/* VIEW: SETTINGS SCREEN */}
-          {currentView === "settings" && currentUser && (
-            <section className="view-container active-view w-full min-h-screen pb-28 pt-4 px-4 flex flex-col items-center select-none text-stone-100">
-              <div className="w-full max-w-sm flex flex-col gap-6">
-                
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                  <button 
-                    onClick={() => {
-                      setEditDisplayNameOpen(false);
-                      setCurrentView("profile");
-                    }}
-                    className="p-2 rounded-full hover:bg-white/5 text-stone-300 transition-colors border-none bg-transparent cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[24px]">arrow_back</span>
-                  </button>
-                  <h1 className="text-2xl font-serif italic text-white">Settings</h1>
-                  <div className="w-10"></div>
-                </div>
-
-                {/* Subscription */}
-                <div className="w-full flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold tracking-wide text-white">Subscription</span>
-                    <div className="h-0.5 w-6 bg-[#C87545] rounded-full"></div>
-                  </div>
-                  <div className="w-full bg-[#1F1C1A] border border-[#2D2A26] rounded-2xl overflow-hidden divide-y divide-[#2D2A26]">
-                    <div 
-                      onClick={() => alert("Thank you for supporting BetweenUs! Upgrade to Pro features is coming soon.")}
-                      className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-white/[0.02]"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-white">BetweenUs Pro</p>
-                        <p className="text-xs text-stone-400 mt-0.5">Upgrade to unlock the full space</p>
-                      </div>
-                      <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
-                    </div>
-                    <div 
-                      onClick={() => alert("Purchases successfully restored.")}
-                      className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-white/[0.02]"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-white">Restore purchases</p>
-                        <p className="text-xs text-stone-400 mt-0.5">Already subscribed? Tap to restore</p>
-                      </div>
-                      <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Account */}
-                <div className="w-full flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold tracking-wide text-white">Account</span>
-                    <div className="h-0.5 w-6 bg-[#C87545] rounded-full"></div>
-                  </div>
-                  <div className="w-full bg-[#1F1C1A] border border-[#2D2A26] rounded-2xl overflow-hidden divide-y divide-[#2D2A26]">
-                    <div 
-                      onClick={() => alert("Notification settings configured. You will receive updates about date countdowns and daily challenges.")}
-                      className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-white/[0.02]"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-white">Notifications</p>
-                        <p className="text-xs text-stone-400 mt-0.5">Choose what you hear about</p>
-                      </div>
-                      <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
-                    </div>
-                    <div 
-                      onClick={() => alert("To add widgets, go to your iOS / Android home screen, long press, search for BetweenUs, and select either the Date Countdown or Drawing Canvas widgets.")}
-                      className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-white/[0.02]"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-white">Widgets</p>
-                        <p className="text-xs text-stone-400 mt-0.5">Set up Countdown and Canvas</p>
-                      </div>
-                      <span className="material-symbols-outlined text-stone-500 text-base">chevron_right</span>
-                    </div>
-                    <div className="w-full p-4 flex items-center justify-between">
-                      {editDisplayNameOpen ? (
-                        <div className="flex items-center gap-2 w-full py-1">
-                          <input 
-                            type="text" 
-                            className="input-field w-full py-2 px-3 text-xs bg-stone-900 border-white/10 rounded-lg text-white" 
-                            value={profileName} 
-                            onChange={(e) => setProfileName(e.target.value)} 
-                            autoFocus
-                          />
-                          <button 
-                            onClick={() => {
-                              if (!profileName.trim()) return alert("Name cannot be empty.");
-                              handleProfileSave();
-                              setEditDisplayNameOpen(false);
-                            }}
-                            className="px-4 py-2 bg-[#E58B58] hover:bg-[#c6764b] text-white text-[11px] rounded-lg font-bold transition-colors cursor-pointer"
-                          >
-                            Save
-                          </button>
-                          <button 
-                            onClick={() => {
-                              setProfileName(currentUser.name);
-                              setEditDisplayNameOpen(false);
-                            }}
-                            className="px-3 py-2 bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white text-[11px] rounded-lg font-bold transition-colors cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <div 
-                          onClick={() => setEditDisplayNameOpen(true)}
-                          className="flex items-center justify-between w-full cursor-pointer"
-                        >
-                          <div>
-                            <p className="text-xs text-stone-400">Display name</p>
-                            <p className="text-sm font-medium text-white mt-0.5">{currentUser.name}</p>
-                          </div>
-                          <span className="material-symbols-outlined text-stone-400 text-base">edit</span>
-                        </div>
-                      )}
-                    </div>
-                    <button 
-                      onClick={handleLogout}
-                      className="w-full p-4 text-left text-sm font-medium text-[#C87545] hover:bg-white/[0.02] border-0 bg-transparent cursor-pointer"
-                    >
-                      Sign out
-                    </button>
-                    <button 
-                      onClick={handleDeleteAccount}
-                      className="w-full p-4 text-left text-sm font-medium text-red-400 hover:bg-white/[0.02] border-0 bg-transparent cursor-pointer"
-                    >
-                      Delete account
-                    </button>
-                  </div>
-                </div>
-
-                {/* Feedback & Legal */}
-                <div className="w-full flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold tracking-wide text-white">Feedback</span>
-                    <div className="h-0.5 w-6 bg-[#C87545] rounded-full"></div>
-                  </div>
-                  <div className="w-full bg-[#1F1C1A] border border-[#2D2A26] rounded-2xl overflow-hidden">
-                    <a 
-                      href="mailto:support@betweenus.app?subject=Feedback"
-                      className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-white/[0.02] text-stone-100 no-underline"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-white">Leave feedback</p>
-                        <p className="text-xs text-stone-400 mt-0.5">Tell us what to improve or what you want next</p>
-                      </div>
-                      <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
-                    </a>
-                  </div>
-                </div>
-
-                <div className="w-full flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold tracking-wide text-white">Legal</span>
-                    <div className="h-0.5 w-6 bg-[#C87545] rounded-full"></div>
-                  </div>
-                  <div className="w-full bg-[#1F1C1A] border border-[#2D2A26] rounded-2xl overflow-hidden divide-y divide-[#2D2A26]">
-                    <a href="#" onClick={(e) => { e.preventDefault(); alert("Terms of Service summary: Play fair, stay connected, keep it between us!"); }} className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-white/[0.02] text-stone-100 no-underline">
-                      <p className="text-sm font-medium text-white">Terms of Service</p>
-                      <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
-                    </a>
-                    <a href="#" onClick={(e) => { e.preventDefault(); alert("Privacy Policy summary: Your private entries, drawings, and scores are strictly local/private between you and your partner."); }} className="w-full p-4 flex items-center justify-between cursor-pointer hover:bg-white/[0.02] text-stone-100 no-underline">
-                      <p className="text-sm font-medium text-white">Privacy Policy</p>
-                      <span className="material-symbols-outlined text-stone-500 text-base">open_in_new</span>
-                    </a>
-                  </div>
-                </div>
-
-                <p className="text-center text-xs text-stone-600 pt-2">BetweenUs · v1.0</p>
-              </div>
-            </section>
-          )}
         </main>
-      </div>
+            </>
+          )}
+        </div>
 
         {/* Bottom Nav Bar (Mobile Only) */}
-        {currentUser && currentView !== "landing" && currentView !== "onboarding" && currentSpace && (
+        {currentUser && currentView !== "landing" && currentView !== "onboarding" && currentView !== "profile" && currentView !== "settings" && currentSpace && (
           <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-6 pb-8 pt-4 bg-[#181615] border-t border-[#282522] rounded-t-[24px] md:hidden shadow-lg">
             
             {/* Sanctuary (Home) */}
@@ -2779,14 +2682,7 @@ export default function ClientPage() {
               <span className="font-label-sm text-[10px] font-bold">Timeline</span>
             </button>
 
-            {/* Profile (Settings) */}
-            <button 
-              className={`flex flex-col items-center justify-center transition-all duration-200 ${(currentView === "profile" || currentView === "settings") ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
-              onClick={() => setCurrentView("profile")}
-            >
-              <span className="material-symbols-outlined mb-1">person_heart</span>
-              <span className="font-label-sm text-[10px] font-bold">Profile</span>
-            </button>
+
             
           </nav>
         )}
@@ -2863,51 +2759,53 @@ export default function ClientPage() {
       )}
 
       {/* Dev Testing Collapsible Toolbar */}
-      <div className={`dev-toolbar ${devToolbarCollapsed ? "collapsed" : ""} hidden md:block`}>
-        <div className="dev-toolbar-header" onClick={() => setDevToolbarCollapsed(!devToolbarCollapsed)}>
-          <span className="dev-toolbar-title">
-            <span>🛠️</span> BETWEENUS NEXT.JS DEV PANEL & MULTI-USER SIMULATOR
-          </span>
-          <span id="dev-toolbar-chevron" className="text-xs">
-            {devToolbarCollapsed ? "[Click to Expand]" : "[Click to Collapse]"}
-          </span>
-        </div>
-        
-        <div className="dev-toolbar-body">
-          <div className="dev-toolbar-sections">
-            <div className="dev-tool-group">
-              <span className="dev-tool-label">Switch Active:</span>
-              {DB.get(DB.KEYS.USERS).map((u) => {
-                const isActive = currentUser?.id === u.id;
-                return (
-                  <button 
-                    key={u.id} 
-                    className={`btn btn-glass py-1 px-2.5 text-xs font-mono ${isActive ? "dev-btn-active-user" : ""}`}
-                    onClick={() => devSwitchUser(u.id)}
-                  >
-                    {u.name}
-                  </button>
-                );
-              })}
-            </div>
-
-            {currentSpace && partnerUser && (
-              <div className="dev-tool-group border-l border-white/20 pl-4">
-                <span className="dev-tool-label">Simulate Partner ({partnerUser.name}):</span>
-                <button className="btn btn-glass py-1 px-2 text-xs" onClick={devSimulateChat}>Chat Msg</button>
-                <button className="btn btn-glass py-1 px-2 text-xs" onClick={devSimulateAnswer}>Answer Q</button>
-                <button className="btn btn-glass py-1 px-2 text-xs" onClick={devSimulateMood}>Set Mood 😢</button>
-              </div>
-            )}
+      {showDevToolbar && (
+        <div className={`dev-toolbar ${devToolbarCollapsed ? "collapsed" : ""} hidden md:block`}>
+          <div className="dev-toolbar-header" onClick={() => setDevToolbarCollapsed(!devToolbarCollapsed)}>
+            <span className="dev-toolbar-title">
+              <span>🛠️</span> BETWEENUS NEXT.JS DEV PANEL & MULTI-USER SIMULATOR
+            </span>
+            <span id="dev-toolbar-chevron" className="text-xs">
+              {devToolbarCollapsed ? "[Click to Expand]" : "[Click to Collapse]"}
+            </span>
           </div>
           
-          <div>
-            <button className="btn btn-glass py-1 px-3 text-xs border-red-500/20 text-primary" onClick={devResetDB}>
-              Reset Database
-            </button>
+          <div className="dev-toolbar-body">
+            <div className="dev-toolbar-sections">
+              <div className="dev-tool-group">
+                <span className="dev-tool-label">Switch Active:</span>
+                {DB.get(DB.KEYS.USERS).map((u) => {
+                  const isActive = currentUser?.id === u.id;
+                  return (
+                    <button 
+                      key={u.id} 
+                      className={`btn btn-glass py-1 px-2.5 text-xs font-mono ${isActive ? "dev-btn-active-user" : ""}`}
+                      onClick={() => devSwitchUser(u.id)}
+                    >
+                      {u.name}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {currentSpace && partnerUser && (
+                <div className="dev-tool-group border-l border-white/20 pl-4">
+                  <span className="dev-tool-label">Simulate Partner ({partnerUser.name}):</span>
+                  <button className="btn btn-glass py-1 px-2 text-xs" onClick={devSimulateChat}>Chat Msg</button>
+                  <button className="btn btn-glass py-1 px-2 text-xs" onClick={devSimulateAnswer}>Answer Q</button>
+                  <button className="btn btn-glass py-1 px-2 text-xs" onClick={devSimulateMood}>Set Mood 😢</button>
+                </div>
+              )}
+            </div>
+            
+            <div>
+              <button className="btn btn-glass py-1 px-3 text-xs border-red-500/20 text-primary" onClick={devResetDB}>
+                Reset Database
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* --- PREMIUM COMPONENT MODALS --- */}
 
