@@ -13,11 +13,13 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
+  padding-top: env(safe-area-inset-top, 24px);
   padding-bottom: 40px;
 }
 
 @media (max-width: 1024px) {
   .profile-page {
+    padding-top: env(safe-area-inset-top, 16px);
     padding-bottom: 110px;
   }
 }
@@ -345,11 +347,13 @@
 .bottom-navigation button.active::before {
   content: "";
   position: absolute;
-  top: -52px;
-  width: 100px;
-  height: 5px;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 4px;
   background: var(--accent);
-  border-radius: 5px 5px 0 0;
+  border-radius: 0 0 4px 4px;
 }
 .nav-icon {
   font-size: 32px;
@@ -417,8 +421,8 @@
     height: 82px;
   }
   .bottom-navigation button.active::before {
-    top: -40px;
-    width: 75px;
+    top: 0;
+    width: 40px;
   }
   .nav-icon {
     font-size: 26px;
