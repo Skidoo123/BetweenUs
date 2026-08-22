@@ -1891,5 +1891,11 @@ body {
   border-bottom-right-radius: 50% 20px;
 }
 
+/* Buttery smooth mobile inertia and bounce scrolling */
+.overflow-y-auto, .overflow-y-scroll {
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth !important;
+}
+
 
 
