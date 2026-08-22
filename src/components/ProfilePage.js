@@ -81,7 +81,7 @@ export default function ProfilePage({
   };
 
   return (
-    <main className="profile-page">
+    <main className="profile-page pb-32 overflow-y-auto scroll-smooth">
       {/* Profile Header */}
       <section className="profile-header">
         <button

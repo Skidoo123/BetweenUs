@@ -30,7 +30,7 @@ export default function SettingsPage({
   };
 
   return (
-    <main className="settings-page">
+    <main className="settings-page pb-32 overflow-y-auto scroll-smooth">
       {/* Header */}
       <header className="settings-header">
         <button
