@@ -2652,7 +2652,7 @@ export default function ClientPage() {
                   </div>
                 ) : (
                   /* Compact Paired Space Card */
-                  <div className="w-full bg-[#1E1C1A] border border-[#2D2A26] rounded-3xl p-6 text-center flex flex-col items-center gap-4 relative overflow-hidden shadow-lg">
+                  <div className="w-full max-w-md mx-auto bg-[#1E1C1A] border border-[#2D2A26] rounded-3xl p-6 text-center flex flex-col items-center gap-4 relative overflow-hidden shadow-lg shrink-0">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl pointer-events-none"></div>
                     
                     {/* Avatar Connection Row */}
