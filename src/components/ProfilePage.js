@@ -46,14 +46,37 @@ export default function ProfilePage({
   };
 
   const copyInviteCode = async () => {
+    const cleanCode = inviteCode.replace(/\s+/g, "");
     try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(inviteCode.replace(/\s+/g, ""));
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(cleanCode);
         setCopySuccess(true);
         setTimeout(() => setCopySuccess(false), 2000);
+        return;
       }
     } catch (error) {
-      console.error("Could not copy invite code:", error);
+      console.warn("navigator.clipboard failed, trying fallback", error);
+    }
+
+    // Fallback copy logic
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = cleanCode;
+      textArea.style.position = "fixed";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      if (successful) {
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } else {
+        alert("Could not copy code. Code: " + cleanCode);
+      }
+    } catch (err) {
+      console.error("Fallback copy failed:", err);
+      alert("Could not copy code. Code: " + cleanCode);
     }
   };
 

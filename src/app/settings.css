@@ -1,7 +1,7 @@
 .settings-page {
   min-height: 100vh;
   padding:
-    30px 38px
+    env(safe-area-inset-top, 30px) 38px
     60px;
   background: #242220;
   color: #f3f0ec;
@@ -141,48 +141,52 @@
 /* Mobile */
 @media (max-width: 600px) {
   .settings-page {
-    padding: 25px 16px 45px;
+    padding: env(safe-area-inset-top, 25px) 16px 45px;
   }
   .settings-header {
-    margin-bottom: 42px;
-  }
-  .settings-header h1 {
-    font-size: 34px;
-  }
-  .back-button {
-    font-size: 48px;
-  }
-  .settings-section {
     margin-bottom: 30px;
   }
+  .settings-header h1 {
+    font-size: 22px;
+  }
+  .back-button {
+    font-size: 38px;
+    width: 40px;
+    height: 40px;
+    line-height: 28px;
+  }
+  .settings-section {
+    margin-bottom: 24px;
+  }
   .settings-section-title h2 {
-    font-size: 26px;
+    font-size: 18px;
   }
   .settings-section-title span {
-    width: 55px;
+    width: 45px;
+    height: 3px;
   }
   .settings-card {
-    border-radius: 23px;
+    border-radius: 20px;
   }
   .settings-row {
-    min-height: 95px;
-    padding: 20px;
+    min-height: 80px;
+    padding: 16px;
   }
   .settings-row-title {
-    font-size: 18px;
-  }
-  .settings-row-subtitle {
     font-size: 15px;
   }
+  .settings-row-subtitle {
+    font-size: 13px;
+  }
   .settings-row-description {
-    font-size: 14px;
-    margin-top: 13px;
+    font-size: 12px;
+    margin-top: 10px;
   }
   .danger-row {
-    padding: 22px 20px;
-    font-size: 18px;
+    padding: 18px 16px;
+    font-size: 15px;
   }
   .row-icon {
-    font-size: 28px;
+    font-size: 24px;
   }
 }

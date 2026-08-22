@@ -47,7 +47,7 @@ export default function SettingsPage({
       {/* Subscription */}
       <SettingsSection title="Subscription">
         <SettingsRow
-          title="Tend App Pro"
+          title="BetweenUs Pro"
           subtitle="Upgrade to unlock the full space"
           arrow
           onClick={onSubscription}
@@ -122,7 +122,7 @@ export default function SettingsPage({
       </SettingsSection>
 
       <footer className="settings-footer">
-        Tend · v1.0
+        BetweenUs · v1.0
       </footer>
     </main>
   );
