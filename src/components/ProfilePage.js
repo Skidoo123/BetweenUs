@@ -233,45 +233,6 @@ export default function ProfilePage({
         </div>
       </section>
 
-      {/* Bottom Navigation */}
-      <nav className="bottom-navigation">
-        <button
-          type="button"
-          onClick={() => onNavigate?.("home")}
-        >
-          <span className="material-symbols-outlined nav-icon">home</span>
-          <small>Home</small>
-        </button>
-        <button
-          type="button"
-          onClick={() => onNavigate?.("diary")}
-        >
-          <span className="material-symbols-outlined nav-icon">book</span>
-          <small>Diary</small>
-        </button>
-        <button
-          type="button"
-          onClick={() => onNavigate?.("daily")}
-        >
-          <span className="material-symbols-outlined nav-icon">auto_awesome</span>
-          <small>Closer</small>
-        </button>
-        <button
-          type="button"
-          onClick={() => onNavigate?.("memories")}
-        >
-          <span className="material-symbols-outlined nav-icon">auto_stories</span>
-          <small>Feed</small>
-        </button>
-        <button
-          className="active"
-          type="button"
-          onClick={() => onNavigate?.("profile")}
-        >
-          <span className="material-symbols-outlined nav-icon">person</span>
-          <small>Profile</small>
-        </button>
-      </nav>
     </main>
   );
 }

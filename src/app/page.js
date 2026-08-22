@@ -2643,46 +2643,53 @@ export default function ClientPage() {
         </div>
 
         {/* Bottom Nav Bar (Mobile Only) */}
-        {currentUser && currentView !== "landing" && currentView !== "onboarding" && currentView !== "profile" && currentView !== "settings" && currentSpace && (
+        {currentUser && currentView !== "landing" && currentView !== "onboarding" && currentSpace && (
           <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-6 pb-8 pt-4 bg-[#181615] border-t border-[#282522] rounded-t-[24px] md:hidden shadow-lg">
             
-            {/* Sanctuary (Home) */}
+            {/* Home */}
             <button 
               className={`flex flex-col items-center justify-center transition-all duration-200 ${(currentView === "home" || currentView === "diary" || currentView === "scoreboard") ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
               onClick={() => setCurrentView("home")}
             >
               <span className="material-symbols-outlined mb-1">home</span>
-              <span className="font-label-sm text-[10px] font-bold">Sanctuary</span>
+              <span className="font-label-sm text-[10px] font-bold">Home</span>
             </button>
 
-            {/* Rituals (Daily) */}
+            {/* Closer */}
             <button 
               className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "daily" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
               onClick={() => setCurrentView("daily")}
             >
               <span className="material-symbols-outlined mb-1">auto_awesome</span>
-              <span className="font-label-sm text-[10px] font-bold">Rituals</span>
+              <span className="font-label-sm text-[10px] font-bold">Closer</span>
             </button>
 
-            {/* Our Space (Chat) */}
+            {/* Space (Chat) */}
             <button 
               className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "chat" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
               onClick={() => setCurrentView("chat")}
             >
               <span className="material-symbols-outlined mb-1">chat_bubble</span>
-              <span className="font-label-sm text-[10px] font-bold">Our Space</span>
+              <span className="font-label-sm text-[10px] font-bold">Space</span>
             </button>
 
-            {/* Timeline (Memories) */}
+            {/* Feed */}
             <button 
               className={`flex flex-col items-center justify-center transition-all duration-200 ${currentView === "memories" ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
               onClick={() => setCurrentView("memories")}
             >
               <span className="material-symbols-outlined mb-1">auto_stories</span>
-              <span className="font-label-sm text-[10px] font-bold">Timeline</span>
+              <span className="font-label-sm text-[10px] font-bold">Feed</span>
             </button>
 
-
+            {/* Profile */}
+            <button 
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${(currentView === "profile" || currentView === "settings") ? "text-primary scale-110" : "text-on-surface-variant/70 hover:text-primary"}`}
+              onClick={() => setCurrentView("profile")}
+            >
+              <span className="material-symbols-outlined mb-1">person</span>
+              <span className="font-label-sm text-[10px] font-bold">Profile</span>
+            </button>
             
           </nav>
         )}
