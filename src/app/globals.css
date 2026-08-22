@@ -119,7 +119,7 @@ body {
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-darker);
   color: var(--text-primary);
-  min-height: 100vh;
+  min-height: max(884px, 100dvh);
   overflow-x: hidden;
   line-height: 1.5;
 }
