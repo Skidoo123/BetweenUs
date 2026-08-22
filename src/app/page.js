@@ -2520,12 +2520,14 @@ export default function ClientPage() {
           )}
 
           {/* VIEW: SETTINGS & PROFILE REDESIGN */}
+          {/* VIEW: PROFILE SCREEN (REBUILT STARTER LAYOUT) */}
           {currentView === "profile" && currentUser && (
             <section className="view-container active-view w-full min-h-screen pb-28 pt-4 px-4 flex flex-col items-center select-none">
-              <div className="w-full max-w-sm flex flex-col gap-8">
+              <div className="w-full max-w-sm flex flex-col gap-6 bg-[#1F1C1A] border border-[#2D2A26] rounded-3xl p-6 shadow-lg">
                 
-                {/* Top Bar Gear */}
-                <div className="w-full flex justify-end">
+                {/* Header Row */}
+                <div className="flex justify-between items-center w-full">
+                  <h2 className="text-xl font-bold text-white font-serif italic">My Profile</h2>
                   <button 
                     onClick={() => setCurrentView("settings")}
                     className="p-2 text-stone-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
@@ -2535,147 +2537,25 @@ export default function ClientPage() {
                   </button>
                 </div>
 
-                {/* User Info Row */}
-                <section className="w-full flex items-center gap-6 mt-4">
-                  <div className="relative flex-shrink-0 cursor-pointer select-none group" onClick={() => profileImageInputRef.current?.click()}>
-                    {profileImagePreview ? (
-                      <img src={profileImagePreview} alt="Preview" className="w-20 h-20 rounded-full object-cover border-2 border-[#523322]" />
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-[#fdba74] border-2 border-[#1c1917] flex items-center justify-center shadow-lg">
-                        <span className="font-serif italic text-2xl font-bold text-[#7c2d12] leading-none pt-1">
-                          {currentUser.name[0].toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                    <button className="absolute bottom-0 right-0 w-8 h-8 bg-[#1c1917] border border-[#2d2a26] rounded-full flex items-center justify-center hover:bg-[#2d2a28] transition-colors group cursor-pointer">
-                      <span className="material-symbols-outlined text-[#ffb68f] text-[16px] group-active:scale-90 transition-transform">photo_camera</span>
-                    </button>
-                    <input 
-                      type="file" 
-                      ref={profileImageInputRef} 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={handleProfileImageChange} 
-                    />
+                {/* Profile Starter Content */}
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <div className="w-20 h-20 rounded-full bg-[#3D261A] border border-[#523322] flex items-center justify-center text-2xl font-bold text-[#E58B58]">
+                    {currentUser.name[0].toUpperCase()}
                   </div>
-                  <div className="flex flex-col justify-center">
-                    <h2 className="font-serif italic text-3xl font-bold text-white mb-1">{currentUser.name}</h2>
-                    <p className="text-sm text-stone-400">{currentUser.email}</p>
+                  <div className="text-center">
+                    <h3 className="text-lg font-bold text-white">{currentUser.name}</h3>
+                    <p className="text-xs text-stone-400">{currentUser.email}</p>
                   </div>
-                </section>
-
-                {/* Partner Section Header */}
-                <div className="w-full flex items-center gap-4 mt-2">
-                  <h3 className="text-sm font-semibold tracking-widest text-stone-400 uppercase">Partner</h3>
-                  <div className="flex-grow h-px bg-[#ffb68f] opacity-30"></div>
                 </div>
 
-                {/* Pairing Card */}
-                {!currentSpace || !partnerUser ? (
-                  /* Unpaired Invite Card */
-                  <div className="w-full bg-[#1F1C1A] border border-[#2D2A26] rounded-3xl p-6 flex flex-col gap-6 shadow-[0_0_30px_rgba(200,117,69,0.03)] transition-shadow duration-300 hover:shadow-[0_0_30px_rgba(200,117,69,0.08)]">
-                    <div className="text-center">
-                      <p className="text-sm text-stone-300">Your invite code — share with your partner</p>
-                    </div>
-
-                    {/* Envelope Graphic */}
-                    <div 
-                      onClick={() => {
-                        if (currentSpace?.code) {
-                          if (navigator.share) {
-                            navigator.share({
-                              title: "Join me on BetweenUs",
-                              text: `Here is my invite code: ${currentSpace.code}`,
-                              url: `${window.location.origin}/?code=${currentSpace.code}`
-                            }).catch(() => {
-                              navigator.clipboard.writeText(currentSpace.code);
-                              setCopySuccess(true);
-                              setTimeout(() => setCopySuccess(false), 2000);
-                            });
-                          } else {
-                            navigator.clipboard.writeText(currentSpace.code);
-                            setCopySuccess(true);
-                            setTimeout(() => setCopySuccess(false), 2000);
-                          }
-                        }
-                      }}
-                      className="w-full h-32 envelope-card rounded-2xl flex flex-col items-center justify-center shadow-inner relative group cursor-pointer transition-transform active:scale-98 select-none"
-                    >
-                      <div className="envelope-flap transition-transform group-hover:-translate-y-1"></div>
-                      <div className="z-10 w-12 h-12 bg-[#93000a] rounded-full flex items-center justify-center shadow-md mb-2 border-2 border-[#E8DCC4]">
-                        <span className="material-symbols-outlined text-[#ffdad6] text-[24px] select-none" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
-                      </div>
-                      <span className="text-[10px] font-mono tracking-wider text-[#8c7b60] z-10 font-bold uppercase select-none">to your person</span>
-                    </div>
-
-                    {/* Invite Code Display */}
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-full flex justify-center py-2">
-                        <div className="bg-[#141211] px-6 py-3 rounded-full border border-[#ffb68f]/20">
-                          <span className="font-mono text-sm text-[#ffb68f] tracking-[0.3em] font-bold select-all">
-                            {currentSpace ? currentSpace.code.split("").join(" ") : "N O   C O D E"}
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-xs text-stone-500 select-none">
-                        {copySuccess ? "Copied to clipboard!" : "tap envelope to share"}
-                      </p>
-                    </div>
-
-                    {/* Divider */}
-                    <div className="w-full flex items-center gap-4 py-2">
-                      <div className="flex-grow h-px bg-[#2D2A26]"></div>
-                      <span className="text-xs text-stone-500 italic select-none">or</span>
-                      <div className="flex-grow h-px bg-[#2D2A26]"></div>
-                    </div>
-
-                    {/* Partner Code Form */}
-                    <div className="w-full flex flex-col gap-4">
-                      <div className="relative w-full">
-                        <input 
-                          type="text"
-                          placeholder="Enter their code"
-                          value={connectPartnerCode}
-                          onChange={(e) => setConnectPartnerCode(e.target.value.toUpperCase())}
-                          className="w-full bg-[#2d2a28] border-none border-b-2 border-transparent focus:border-[#ffb68f] focus:ring-0 rounded-xl px-4 py-4 text-center text-sm font-mono tracking-widest text-white placeholder:text-stone-500 transition-colors focus:outline-none"
-                        />
-                      </div>
-                      <button 
-                        disabled={!connectPartnerCode.trim()}
-                        onClick={() => handleJoinSpaceCode(connectPartnerCode)}
-                        className="w-full bg-[#fdba74] hover:bg-[#e2a462] disabled:bg-[#2A2623] text-[#7c2d12] disabled:text-stone-600 py-4 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all font-semibold border-none cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[20px] select-none">link</span>
-                        Connect
-                      </button>
-                    </div>
+                {/* Connection Section */}
+                <div className="border-t border-[#2D2A26] pt-4 w-full text-center">
+                  <p className="text-xs text-stone-400 mb-2">Rebuild your partner interface here...</p>
+                  <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-xl text-stone-500 text-xs">
+                    Starter Card Placeholder
                   </div>
-                ) : (
-                  /* Compact Paired Space Card */
-                  <div className="w-full max-w-md mx-auto bg-[#1E1C1A] border border-[#2D2A26] rounded-3xl p-6 text-center flex flex-col items-center gap-4 relative overflow-hidden shadow-lg shrink-0">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl pointer-events-none"></div>
-                    
-                    {/* Avatar Connection Row */}
-                    <div className="flex items-center gap-4 justify-center mb-1">
-                      {renderAvatar(currentUser, "w-14 h-14 border border-[#E58B58]/40", "text-base font-bold")}
-                      <div className="h-[2px] w-12 bg-gradient-to-r from-[#E58B58] to-[#6C8EEF]"></div>
-                      {renderAvatar(partnerUser, "w-14 h-14 border border-[#6C8EEF]/40", "text-base font-bold")}
-                    </div>
+                </div>
 
-                    <h4 className="text-base font-bold text-white">Paired Space Connected</h4>
-                    
-                    <p className="text-sm text-stone-300/80 leading-relaxed max-w-sm mx-auto text-center">
-                      You are connected with <span className="font-serif italic text-amber-200 text-base leading-none">{partnerUser.name}</span>. Everything you plan, draw, and track will sync.
-                    </p>
-                    
-                    <button 
-                      onClick={handleLeaveSpace}
-                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-stone-700 text-stone-300 hover:text-red-400 hover:border-red-500/40 text-sm transition-colors mt-2 cursor-pointer bg-transparent"
-                    >
-                      Disconnect Space
-                    </button>
-                  </div>
-                )}
               </div>
             </section>
           )}
