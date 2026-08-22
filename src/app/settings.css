@@ -141,7 +141,7 @@
 /* Mobile */
 @media (max-width: 600px) {
   .settings-page {
-    padding: env(safe-area-inset-top, 25px) 16px 45px;
+    padding: env(safe-area-inset-top, 25px) 16px 160px;
   }
   .settings-header {
     margin-bottom: 30px;
