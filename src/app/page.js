@@ -1209,8 +1209,32 @@ export default function ClientPage() {
             <SettingsPage
               user={currentUser}
               onBack={() => navigateTo("profile")}
-              onSubscription={() => alert("Tend App Pro upgraded! All space features unlocked.")}
-              onRestorePurchases={() => alert("Purchases restored successfully.")}
+              onSubscription={() => {
+                if (currentUser?.isPro) {
+                  alert("You are already subscribed to BetweenUs Pro 👑!");
+                } else {
+                  if (confirm("Would you like to subscribe to BetweenUs Pro and unlock all premium space features?")) {
+                    const users = DB.get(DB.KEYS.USERS);
+                    const updated = users.map(u => {
+                      if (u.id === currentUser.id) return { ...u, isPro: true };
+                      return u;
+                    });
+                    DB.set(DB.KEYS.USERS, updated);
+                    loadState();
+                    alert("Thank you! You are now subscribed to BetweenUs Pro 👑!");
+                  }
+                }
+              }}
+              onRestorePurchases={() => {
+                const users = DB.get(DB.KEYS.USERS);
+                const updated = users.map(u => {
+                  if (u.id === currentUser.id) return { ...u, isPro: true };
+                  return u;
+                });
+                DB.set(DB.KEYS.USERS, updated);
+                loadState();
+                alert("Purchases restored! BetweenUs Pro subscription is active 👑.");
+              }}
               onNotifications={() => alert("Notification settings saved.")}
               onWidgets={() => alert("Countdown and Canvas widgets synced with home screen.")}
               onDisplayName={handleUpdateDisplayName}

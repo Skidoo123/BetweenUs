@@ -15,6 +15,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState([]);
   const [spaces, setSpaces] = useState([]);
   const [questions, setQuestions] = useState([]);
+  const [gameScores, setGameScores] = useState([]);
 
   // Search/Filters
   const [searchUsers, setSearchUsers] = useState("");
@@ -67,10 +68,13 @@ export default function AdminPage() {
     const loadedUsers = DB.get(DB.KEYS.USERS);
     const loadedSpaces = DB.get(DB.KEYS.SPACES);
     const loadedQuestions = DB.getAllQuestions();
+    const firstSpaceId = loadedSpaces[0]?.id || "s_demo";
+    const loadedScores = DB.getGameScores(firstSpaceId);
 
     setUsers(loadedUsers);
     setSpaces(loadedSpaces);
     setQuestions(loadedQuestions);
+    setGameScores(loadedScores);
   };
 
   const logEvent = (message) => {
@@ -124,6 +128,59 @@ export default function AdminPage() {
       DB.deleteUser(userId);
       loadAdminData();
       logEvent(`Deleted user profile: ${userName} (${userId})`);
+    }
+  };
+
+  const handleTogglePro = (userId, userName) => {
+    const usersList = DB.get(DB.KEYS.USERS);
+    const updated = usersList.map((u) => {
+      if (u.id === userId) {
+        const nextPro = !u.isPro;
+        logEvent(`Toggled subscription for ${userName}: ${u.isPro ? "PRO" : "TRIAL"} → ${nextPro ? "PRO" : "TRIAL"}`);
+        return { ...u, isPro: nextPro };
+      }
+      return u;
+    });
+    DB.set(DB.KEYS.USERS, updated);
+    loadAdminData();
+  };
+
+  const handleIncrementScore = (gameId, scoreType) => {
+    const spaceId = simSpaceId || spaces[0]?.id;
+    if (!spaceId) return alert("Create an active relationship space first.");
+    const updated = DB.updateGameScore(spaceId, gameId, scoreType);
+    setGameScores(updated);
+    loadAdminData();
+    logEvent(`[Game Admin] Manually incremented win (${scoreType}) for game: ${gameId}`);
+  };
+
+  const handleResetScores = () => {
+    const spaceId = simSpaceId || spaces[0]?.id;
+    if (!spaceId) return;
+    if (confirm("Reset couple game scoreboards back to zero?")) {
+      const reset = DB.resetGameScores(spaceId);
+      setGameScores(reset);
+      loadAdminData();
+      logEvent(`[Game Admin] Cleared game scoreboards for space: ${spaceId}`);
+    }
+  };
+
+  const handleForceLinkSpace = (spaceId) => {
+    const space = spaces.find(s => s.id === spaceId);
+    if (!space) return;
+    const availableUsers = users.filter(u => !u.currentSpaceId && u.id !== space.creatorId);
+    if (availableUsers.length === 0) {
+      alert("No unlinked mockup users available. Please seed or register a new user account first.");
+      return;
+    }
+    const partner = availableUsers[0];
+    try {
+      DB.joinSpace(partner.id, space.code);
+      loadAdminData();
+      logEvent(`[Connection Sim] Force linked Partner ${partner.name} (${partner.id}) to Space ${space.id} using invite code ${space.code}`);
+      alert(`Space successfully connected! Partner: ${partner.name}`);
+    } catch (e) {
+      alert("Link connection failed: " + e.message);
     }
   };
 
@@ -353,6 +410,14 @@ export default function AdminPage() {
               <span className="material-symbols-outlined text-[22px]">quiz</span>
               <span className="font-label-md text-label-md">Question Pool</span>
             </a>
+            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "content" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("content"); setMobileSidebarOpen(false); }}>
+              <span className="material-symbols-outlined text-[22px]">local_fire_department</span>
+              <span className="font-label-md text-label-md">Streaks & Challenges</span>
+            </a>
+            <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "games" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("games"); setMobileSidebarOpen(false); }}>
+              <span className="material-symbols-outlined text-[22px]">sports_esports</span>
+              <span className="font-label-md text-label-md">Couples Games</span>
+            </a>
             <a href="#" className={`admin-tab nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant font-medium hover:bg-white/30 hover:text-primary transition-all duration-200 ${activeTab === "simulator" ? "active" : ""}`} onClick={(e) => { e.preventDefault(); setActiveTab("simulator"); setMobileSidebarOpen(false); }}>
               <span className="material-symbols-outlined text-[22px]">terminal</span>
               <span className="font-label-md text-label-md">Multi-User Simulator</span>
@@ -373,9 +438,15 @@ export default function AdminPage() {
           {/* TAB: OVERVIEW */}
           {activeTab === "overview" && (
             <section className="view-panel active-panel">
-              <div>
-                <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Admin Dashboard Overview</h2>
-                <p className="text-on-surface-variant">Instant metrics and health stats of your relationship private sanctuary network.</p>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h2 className="text-3xl font-bold font-headline-sm text-primary mb-1">Admin Dashboard Overview</h2>
+                  <p className="text-on-surface-variant">Instant metrics and health stats of your relationship private sanctuary network.</p>
+                </div>
+                <div className="flex items-center gap-2 bg-[#d98d52]/10 border border-[#d98d52]/20 px-3.5 py-2 rounded-full text-xs font-semibold text-[#d98d52] shadow-sm">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Database: Sandbox Storage (Local LocalStorage)</span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -503,6 +574,7 @@ export default function AdminPage() {
                         <th>Email Address</th>
                         <th>Space ID</th>
                         <th>Current Mood</th>
+                        <th>Subscription</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -541,8 +613,20 @@ export default function AdminPage() {
                               )}
                             </td>
                             <td>
+                              {u.isPro ? (
+                                <span className="text-amber-500 font-bold text-xs bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 flex items-center gap-1 w-fit">
+                                  <span>👑</span> PRO
+                                </span>
+                              ) : (
+                                <span className="text-on-surface-variant/65 text-xs bg-white/5 px-2 py-1 rounded border border-white/10 flex items-center gap-1 w-fit">
+                                  TRIAL
+                                </span>
+                              )}
+                            </td>
+                            <td>
                               <div className="flex gap-2">
                                 <button className="bg-primary/25 border border-primary/40 text-primary hover:bg-primary hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold" onClick={() => handleImpersonate(u.id)}>Impersonate</button>
+                                <button className="bg-amber-500/20 border border-amber-500/30 text-amber-500 hover:bg-amber-500 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold" onClick={() => handleTogglePro(u.id, u.name)}>Toggle Pro</button>
                                 <button className="border border-red-500/30 text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg text-xs font-semibold" onClick={() => handleDeleteUser(u.id, u.name)}>Delete</button>
                               </div>
                             </td>
@@ -601,7 +685,12 @@ export default function AdminPage() {
                               <span className="text-xs font-semibold uppercase tracking-wider bg-white/10 px-2.5 py-1 rounded-full">{s.relationshipMode.replace("_", " ")}</span>
                             </td>
                             <td>
-                              <button className="border border-red-500/30 text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg text-xs font-semibold" onClick={() => handleDisbandSpace(s.id, s.code)}>Disband</button>
+                              <div className="flex gap-2">
+                                {!s.partnerId && (
+                                  <button className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold" onClick={() => handleForceLinkSpace(s.id)}>Link Partner</button>
+                                )}
+                                <button className="border border-red-500/30 text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg text-xs font-semibold" onClick={() => handleDisbandSpace(s.id, s.code)}>Disband</button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -827,6 +916,142 @@ export default function AdminPage() {
                   </div>
                 </div>
 
+              </div>
+            </section>
+          )}
+
+          {/* TAB: STREAKS & CHALLENGES */}
+          {activeTab === "content" && (
+            <section className="view-panel active-panel">
+              <div className="flex justify-between items-center mb-1">
+                <div>
+                  <h2 className="text-3xl font-bold font-headline-sm text-primary">Streaks & Challenges Pool</h2>
+                  <p className="text-on-surface-variant">Manage couples daily check-in challenges and streak activities.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Active Challenges List */}
+                <div className="glass-card p-6 flex flex-col gap-4">
+                  <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary">star</span>
+                    Daily Challenge Prompts
+                  </h3>
+                  <div className="overflow-y-auto max-h-[400px] border border-white/10 rounded-xl">
+                    <table className="admin-table">
+                      <thead>
+                        <tr className="bg-white/10">
+                          <th>ID</th>
+                          <th>Challenge Text</th>
+                          <th>Points</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {DEFAULT_CHALLENGES.map((c) => (
+                          <tr key={c.id} className="border-b border-white/5 last:border-0 hover:bg-white/5">
+                            <td className="font-mono text-xs text-on-surface-variant">{c.id}</td>
+                            <td className="text-sm">{c.text}</td>
+                            <td className="font-bold text-amber-500">+{c.points || 50}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Streaks and Date Plans Overrides */}
+                <div className="glass-card p-6 flex flex-col gap-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-1">
+                      <span className="material-symbols-outlined text-primary">event_note</span>
+                      Date Plans & Activities
+                    </h3>
+                    <p className="text-xs text-on-surface-variant">Mocked calendar activities in relationship workspaces.</p>
+                  </div>
+                  
+                  <div className="flex-1 bg-black/10 rounded-xl p-4 overflow-y-auto max-h-[300px]">
+                    {spaces.map((s) => {
+                      const plans = DB.getDatePlans(s.id);
+                      return (
+                        <div key={s.id} className="mb-4 pb-4 border-b border-white/10 last:border-0">
+                          <strong className="text-sm block text-primary">{s.name}</strong>
+                          {plans.length === 0 ? (
+                            <span className="text-xs text-on-surface-variant/40">No planned dates yet.</span>
+                          ) : (
+                            <div className="mt-2 space-y-2">
+                              {plans.map((p) => (
+                                <div key={p.id} className="text-xs bg-white/5 p-2 rounded border border-white/5 flex justify-between items-center">
+                                  <div>
+                                    <strong className="block text-on-surface">{p.title}</strong>
+                                    <span className="text-on-surface-variant">{p.location} · {new Date(p.dateTime).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* TAB: COUPLES GAMES */}
+          {activeTab === "games" && (
+            <section className="view-panel active-panel">
+              <div className="mb-1">
+                <h2 className="text-3xl font-bold font-headline-sm text-primary">Couples Games Scoreboards</h2>
+                <p className="text-on-surface-variant">Override active game scores, simulate wins, and manage couples leaderboard standings.</p>
+              </div>
+
+              <div className="glass-card p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary">sports_esports</span>
+                    <h3 className="text-lg font-bold text-on-surface">Active Leaderboard Standings</h3>
+                  </div>
+                  <button className="btn btn-glass border-red-500/25 text-red-500 hover:bg-red-500/10 text-xs px-4 py-2" onClick={handleResetScores}>
+                    Reset Scoreboards back to 0
+                  </button>
+                </div>
+
+                <div className="admin-table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr className="bg-white/10">
+                        <th>Game Name</th>
+                        <th>User Score (You)</th>
+                        <th>Partner Score</th>
+                        <th>Draws</th>
+                        <th>Score Modifiers</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {gameScores.map((game) => (
+                        <tr key={game.gameId} className="border-b border-white/10 hover:bg-white/5">
+                          <td>
+                            <div className="flex items-center gap-2">
+                              <span className="material-symbols-outlined text-xl" style={{ color: game.color }}>{game.icon}</span>
+                              <strong className="font-bold">{game.name}</strong>
+                            </div>
+                          </td>
+                          <td className="font-mono text-center font-bold text-primary">{game.userScore}</td>
+                          <td className="font-mono text-center font-bold text-indigo-400">{game.partnerScore}</td>
+                          <td className="font-mono text-center text-on-surface-variant">{game.draws}</td>
+                          <td>
+                            <div className="flex gap-2">
+                              <button className="bg-primary/20 border border-primary/30 text-primary hover:bg-primary hover:text-white px-2 py-1 rounded text-xs" onClick={() => handleIncrementScore(game.gameId, 'user')}>+1 User</button>
+                              <button className="bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500 hover:text-white px-2 py-1 rounded text-xs" onClick={() => handleIncrementScore(game.gameId, 'partner')}>+1 Partner</button>
+                              <button className="bg-white/5 border border-white/10 text-on-surface-variant hover:bg-white/15 px-2 py-1 rounded text-xs" onClick={() => handleIncrementScore(game.gameId, 'draw')}>+1 Draw</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </section>
           )}

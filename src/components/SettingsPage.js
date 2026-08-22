@@ -48,7 +48,7 @@ export default function SettingsPage({
       <SettingsSection title="Subscription">
         <SettingsRow
           title="BetweenUs Pro"
-          subtitle="Upgrade to unlock the full space"
+          subtitle={user?.isPro ? "Active Subscriber 👑" : "Upgrade to unlock the full space"}
           arrow
           onClick={onSubscription}
         />
