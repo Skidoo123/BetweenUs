@@ -1872,5 +1872,23 @@ body {
   }
 }
 
+/* Custom envelope mockup graphic styles */
+.envelope-card {
+  background-color: #E8DCC4;
+  position: relative;
+  overflow: hidden;
+}
+.envelope-flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  border-bottom: 2px solid rgba(0,0,0,0.05);
+  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+  border-bottom-left-radius: 50% 20px;
+  border-bottom-right-radius: 50% 20px;
+}
+
 
 

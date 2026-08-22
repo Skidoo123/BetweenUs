@@ -2522,7 +2522,7 @@ export default function ClientPage() {
           {/* VIEW: SETTINGS & PROFILE REDESIGN */}
           {currentView === "profile" && currentUser && (
             <section className="view-container active-view w-full min-h-screen pb-28 pt-4 px-4 flex flex-col items-center select-none">
-              <div className="w-full max-w-sm flex flex-col gap-6">
+              <div className="w-full max-w-sm flex flex-col gap-8">
                 
                 {/* Top Bar Gear */}
                 <div className="w-full flex justify-end">
@@ -2536,17 +2536,19 @@ export default function ClientPage() {
                 </div>
 
                 {/* User Info Row */}
-                <div className="w-full flex items-center gap-4">
-                  <div className="relative cursor-pointer select-none group" onClick={() => profileImageInputRef.current?.click()}>
+                <section className="w-full flex items-center gap-6 mt-4">
+                  <div className="relative flex-shrink-0 cursor-pointer select-none group" onClick={() => profileImageInputRef.current?.click()}>
                     {profileImagePreview ? (
-                      <img src={profileImagePreview} alt="Preview" className="w-16 h-16 rounded-full object-cover border border-[#523322]" />
+                      <img src={profileImagePreview} alt="Preview" className="w-20 h-20 rounded-full object-cover border-2 border-[#523322]" />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-[#3D261A] border border-[#523322] flex items-center justify-center text-xl font-bold text-[#E58B58]">
-                        {currentUser.name[0].toUpperCase()}
+                      <div className="w-20 h-20 rounded-full bg-[#fdba74] border-2 border-[#1c1917] flex items-center justify-center shadow-lg">
+                        <span className="font-serif italic text-2xl font-bold text-[#7c2d12] leading-none pt-1">
+                          {currentUser.name[0].toUpperCase()}
+                        </span>
                       </div>
                     )}
-                    <button className="absolute -bottom-1 -right-1 bg-[#1F1C1A] border border-[#2D2A26] p-1.5 rounded-full text-stone-300 hover:text-white shadow cursor-pointer">
-                      <span className="material-symbols-outlined text-xs">photo_camera</span>
+                    <button className="absolute bottom-0 right-0 w-8 h-8 bg-[#1c1917] border border-[#2d2a26] rounded-full flex items-center justify-center hover:bg-[#2d2a28] transition-colors group cursor-pointer">
+                      <span className="material-symbols-outlined text-[#ffb68f] text-[16px] group-active:scale-90 transition-transform">photo_camera</span>
                     </button>
                     <input 
                       type="file" 
@@ -2556,25 +2558,25 @@ export default function ClientPage() {
                       onChange={handleProfileImageChange} 
                     />
                   </div>
-                  <div className="flex flex-col">
-                    <h2 className="text-2xl font-serif italic text-white">{currentUser.name}</h2>
-                    <p className="text-xs text-stone-400">{currentUser.email}</p>
+                  <div className="flex flex-col justify-center">
+                    <h2 className="font-serif italic text-3xl font-bold text-white mb-1">{currentUser.name}</h2>
+                    <p className="text-sm text-stone-400">{currentUser.email}</p>
                   </div>
-                </div>
+                </section>
 
                 {/* Partner Section Header */}
-                <div className="w-full flex items-center gap-2 mt-1">
-                  <span className="text-base font-semibold tracking-wide text-white">Partner</span>
-                  <div className="h-0.5 w-6 bg-[#C87545] rounded-full"></div>
+                <div className="w-full flex items-center gap-4 mt-2">
+                  <h3 className="text-sm font-semibold tracking-widest text-stone-400 uppercase">Partner</h3>
+                  <div className="flex-grow h-px bg-[#ffb68f] opacity-30"></div>
                 </div>
 
                 {/* Pairing Card */}
                 {!currentSpace || !partnerUser ? (
                   /* Unpaired Invite Card */
-                  <div className="w-full bg-[#1F1C1A] border border-[#2D2A26] rounded-3xl p-6 flex flex-col items-center gap-5 text-center shadow-lg">
-                    <p className="text-xs text-stone-400 font-medium">
-                      Your invite code — share with your partner
-                    </p>
+                  <div className="w-full bg-[#1F1C1A] border border-[#2D2A26] rounded-3xl p-6 flex flex-col gap-6 shadow-[0_0_30px_rgba(200,117,69,0.03)] transition-shadow duration-300 hover:shadow-[0_0_30px_rgba(200,117,69,0.08)]">
+                    <div className="text-center">
+                      <p className="text-sm text-stone-300">Your invite code — share with your partner</p>
+                    </div>
 
                     {/* Envelope Graphic */}
                     <div 
@@ -2597,53 +2599,55 @@ export default function ClientPage() {
                           }
                         }
                       }}
-                      className="cursor-pointer w-full bg-[#E8DCC4] rounded-2xl p-6 flex flex-col items-center justify-center relative shadow-md transition-transform active:scale-95 select-none"
+                      className="w-full h-32 envelope-card rounded-2xl flex flex-col items-center justify-center shadow-inner relative group cursor-pointer transition-transform active:scale-98 select-none"
                     >
-                      <div className="w-10 h-10 rounded-full bg-[#8B3E2F] border-2 border-[#6E2E21] flex items-center justify-center text-white text-base shadow-inner mb-3">
-                        💌
+                      <div className="envelope-flap transition-transform group-hover:-translate-y-1"></div>
+                      <div className="z-10 w-12 h-12 bg-[#93000a] rounded-full flex items-center justify-center shadow-md mb-2 border-2 border-[#E8DCC4]">
+                        <span className="material-symbols-outlined text-[#ffdad6] text-[24px] select-none" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
                       </div>
-                      <p className="font-serif italic text-base text-[#2A231C]">to your person</p>
+                      <span className="text-[10px] font-mono tracking-wider text-[#8c7b60] z-10 font-bold uppercase select-none">to your person</span>
                     </div>
 
-                    {/* Code Display */}
-                    <div className="flex flex-col items-center gap-1">
-                      <p className="text-xl font-mono font-bold tracking-[0.25em] text-[#E58B58]">
-                        {currentSpace ? currentSpace.code.split("").join(" ") : "N O   C O D E"}
-                      </p>
+                    {/* Invite Code Display */}
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-full flex justify-center py-2">
+                        <div className="bg-[#141211] px-6 py-3 rounded-full border border-[#ffb68f]/20">
+                          <span className="font-mono text-sm text-[#ffb68f] tracking-[0.3em] font-bold select-all">
+                            {currentSpace ? currentSpace.code.split("").join(" ") : "N O   C O D E"}
+                          </span>
+                        </div>
+                      </div>
                       <p className="text-xs text-stone-500 select-none">
                         {copySuccess ? "Copied to clipboard!" : "tap envelope to share"}
                       </p>
                     </div>
 
                     {/* Divider */}
-                    <div className="relative w-full my-1">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-[#2D2A26]"></div>
-                      </div>
-                      <div className="relative flex justify-center text-xs">
-                        <span className="bg-[#1F1C1A] px-3 text-stone-500 font-semibold select-none">or</span>
-                      </div>
+                    <div className="w-full flex items-center gap-4 py-2">
+                      <div className="flex-grow h-px bg-[#2D2A26]"></div>
+                      <span className="text-xs text-stone-500 italic select-none">or</span>
+                      <div className="flex-grow h-px bg-[#2D2A26]"></div>
                     </div>
 
-                    {/* Enter Partner Code Form */}
-                    <div className="w-full flex flex-col gap-2 text-left">
-                      <label className="text-xs text-stone-400 font-medium">Enter your partner's code</label>
-                      <div className="w-full flex gap-2">
+                    {/* Partner Code Form */}
+                    <div className="w-full flex flex-col gap-4">
+                      <div className="relative w-full">
                         <input 
                           type="text"
-                          placeholder="XXXXXXXX"
+                          placeholder="Enter their code"
                           value={connectPartnerCode}
                           onChange={(e) => setConnectPartnerCode(e.target.value.toUpperCase())}
-                          className="flex-1 min-w-0 bg-[#161413] border border-[#2D2A26] rounded-xl px-4 py-2.5 text-center text-sm font-mono tracking-widest text-white placeholder:text-stone-600 focus:outline-none focus:border-[#C87545]"
+                          className="w-full bg-[#2d2a28] border-none border-b-2 border-transparent focus:border-[#ffb68f] focus:ring-0 rounded-xl px-4 py-4 text-center text-sm font-mono tracking-widest text-white placeholder:text-stone-500 transition-colors focus:outline-none"
                         />
-                        <button 
-                          disabled={!connectPartnerCode.trim()}
-                          onClick={() => handleJoinSpaceCode(connectPartnerCode)}
-                          className="px-5 py-2.5 bg-[#C87545] hover:bg-[#b05f32] disabled:bg-[#2A2623] disabled:text-stone-600 text-white font-medium text-xs rounded-xl transition-colors whitespace-nowrap cursor-pointer"
-                        >
-                          Connect
-                        </button>
                       </div>
+                      <button 
+                        disabled={!connectPartnerCode.trim()}
+                        onClick={() => handleJoinSpaceCode(connectPartnerCode)}
+                        className="w-full bg-[#fdba74] hover:bg-[#e2a462] disabled:bg-[#2A2623] text-[#7c2d12] disabled:text-stone-600 py-4 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all font-semibold border-none cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[20px] select-none">link</span>
+                        Connect
+                      </button>
                     </div>
                   </div>
                 ) : (
