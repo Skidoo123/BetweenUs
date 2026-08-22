@@ -1193,7 +1193,7 @@ export default function ClientPage() {
         )}
 
         {/* Main Content Area */}
-        <div className="flex-grow flex-shrink flex-1 min-w-0 h-full flex flex-col overflow-y-auto">
+        <div className="flex-grow flex-shrink flex-1 min-w-0 h-full flex flex-col overflow-y-auto pb-36 md:pb-0">
           {currentView === "profile" ? (
             <ProfilePage
               user={currentUser}
